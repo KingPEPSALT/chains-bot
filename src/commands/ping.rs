@@ -3,7 +3,7 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 #[command]
-pub async fn ping(ctx: &Context, msg: &Message, _args: Args) -> CommandResult{
+async fn ping(ctx: &Context, msg: &Message, _: Args) -> CommandResult{
 
     msg.reply(ctx, "Pong!").await?;
     

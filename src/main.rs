@@ -4,7 +4,7 @@ pub mod db;
 use dotenv;
 use std::{sync::Arc, collections::HashSet};
 
-use commands::{ping::*, snapshot::*, snapshot_channel::*};
+use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*};
 
 use serenity::{
     async_trait,
@@ -26,7 +26,7 @@ impl TypeMapKey for ShardManagerContainer{
 
 
 #[group]
-#[commands(ping, snapshot, snapshot_channel)]
+#[commands(ping, snapshot, snapshot_channel, mod_role)]
 struct General;
 
 struct Handler;

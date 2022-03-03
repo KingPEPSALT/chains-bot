@@ -1,7 +1,7 @@
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::{channel::Message, id::ChannelId},
-    prelude::Context,
+    prelude::{Context}
 };
 
 use crate::db::get_guild;
@@ -12,14 +12,24 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     let qty = args.single::<u64>().unwrap();
 
-    let request = match get_guild(msg.guild_id.unwrap().as_u64()) {
+    let request = match get_guild(msg.guild_id.unwrap().as_u64()) 
+    {
         Ok(t) => t,
         Err(e) => {
             msg.reply(ctx, format!("Could not get guild from database | {} | This is an error within the code.", e.to_string())).await?;
             return Ok(());
         },
     }; 
-
+    if ! (match request.mod_role
+    {
+        Some(t) => msg.author.has_role(ctx, msg.guild_id.unwrap(), t).await?,
+        _ => false,
+    } || msg.member(ctx).await.unwrap().permissions(ctx).await.unwrap().administrator())
+    {
+        msg.reply(ctx, "You don't have the required role!").await?;
+        return Ok(());
+    }
+    
     let channel = match request.snapshot_channel
     { 
         Some(t) => t,
@@ -39,8 +49,8 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     while let Some(message) = iter.next() {
         true_qty = true_qty + 1;
         log_file = format!(
-            "{}\n[{}]\n[{}{} ({})] {}\n",
-            log_file, 
+            "{}\n[{}]\n[{}#{} ({})] {}\n",
+            log_file,
             message.timestamp.to_string(), 
             message.author.name, 
             message.author.discriminator, 
@@ -50,12 +60,12 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     };
 
     log_file = format!(
-        "SNAPSHOT [REQUESTOR: {}{} ({})] [{} MESSAGES]\n\n{}", 
+        "SNAPSHOT [REQUESTOR: {}#{} ({})] [{} MESSAGES]\n\n{}", 
         msg.author.name, 
         msg.author.discriminator, 
         msg.author.id.as_u64(),
-        log_file, 
-        true_qty
+        true_qty,
+        log_file
     );
 
     if let Err(e) = ChannelId::from(channel)
