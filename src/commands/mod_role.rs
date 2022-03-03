@@ -11,6 +11,10 @@ use serenity::{
 
 async fn mod_role(ctx: &Context, msg: &Message, _: Args) -> CommandResult{
     
+    if !msg.member(ctx).await.unwrap().permissions(ctx).await.unwrap().administrator(){
+        msg.reply(ctx, "You need administrator for this command.").await?;
+        return Ok(());
+    }
     
     let role = msg.mention_roles[0];
 

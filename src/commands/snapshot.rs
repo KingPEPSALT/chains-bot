@@ -48,14 +48,19 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     while let Some(message) = iter.next() {
         true_qty = true_qty + 1;
+        let mut attachments = String::new();
+
+        message.attachments.iter().for_each(|a| attachments += &format!("[ATTACHMENT: {}]\n", a.url));
+        
         log_file = format!(
-            "{}\n[{}]\n[{}#{} ({})] {}\n",
+            "{}\n[{}]\n[{}#{} ({})] {}\n{}",
             log_file,
             message.timestamp.to_string(), 
             message.author.name, 
             message.author.discriminator, 
             message.author.id.as_u64(), 
-            message.content
+            message.content,
+            attachments
         );
     };
 
