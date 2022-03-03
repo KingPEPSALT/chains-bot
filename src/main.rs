@@ -1,17 +1,21 @@
-use std::{sync::Arc, env, collections::HashSet};
+pub mod commands;
+pub mod db;
 
-use commands::{ping::*};
+use dotenv;
+use std::{sync::Arc, collections::HashSet};
+
+use commands::{ping::*, log::*, setloggingchannel::*};
 
 use serenity::{
     async_trait,
-    model::{event::ResumedEvent, gateway::Ready},
+    model::{event::{ResumedEvent}, gateway::Ready, prelude::Guild},
     framework::{standard::macros::group, StandardFramework},
     http::Http,
     client::bridge::gateway::ShardManager,
     prelude::*,
 };
+use crate::db::{create_database, add_guild};
 
-use tracing::{info};
 extern crate tokio;
 
 pub struct ShardManagerContainer;
@@ -21,10 +25,8 @@ impl TypeMapKey for ShardManagerContainer{
 }
 
 
-mod commands;
-
 #[group]
-#[commands(ping)]
+#[commands(ping, log, setloggingchannel)]
 struct General;
 
 struct Handler;
@@ -33,20 +35,22 @@ struct Handler;
 impl EventHandler for Handler {
 
     async fn ready(&self, _: Context, ready: Ready) {
-        info!("{} is connected.", ready.user.name);
+        println!("{} is connected.", ready.user.name);
     }
-
+    async fn guild_create(&self, _: Context, g: Guild, is_new: bool){
+        if is_new{
+            add_guild(g.id.as_u64()).expect(&format!("Could not add guild to database {}", g.id.as_u64()));
+        }
+    }
     async fn resume(&self, _: Context, _: ResumedEvent){
-        info!("Resumed.");
+        println!("Resumed.");
     }
 }
 
 #[tokio::main]
 async fn main() {
 
-    tracing_subscriber::fmt::init();
-
-    let token = env::var("DISCORD_TOKEN")
+    let token = dotenv::var("DISCORD_TOKEN")
         .expect("Expected a token in the environment");
 
     let http = Http::new_with_token(&token);
