@@ -39,8 +39,8 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let mut true_qty = 0; 
     while let Some(message) = iter.next() {
         true_qty = true_qty + 1;
-        log_file = format!("{lf}\n[{name}{disc} ({id})]", lf = log_file, name = message.author.name, disc = message.author.discriminator, id = message.author.id.as_u64());
-        log_file = format!("{lf}\n[{time}] {content}\n", lf = log_file, time = message.timestamp.to_string(), content = message.content);
+        log_file = format!("{lf}\n[{time}]",  lf = log_file, time = message.timestamp.to_string());
+        log_file = format!("{lf}\n[{name}{disc} ({id})] {content}\n",lf = log_file, name = message.author.name, disc = message.author.discriminator, id = message.author.id.as_u64(), content = message.content );
     };
     log_file = format!("SNAPSHOT [REQUESTOR: {name}{disc} ({id})] [{q} MESSAGES]\n\n{lf}", lf = log_file, q = true_qty, name = msg.author.name, disc = msg.author.discriminator, id = msg.author.id.as_u64());
 
