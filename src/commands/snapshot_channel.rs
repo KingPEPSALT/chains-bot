@@ -20,10 +20,10 @@ async fn snapshot_channel(ctx: &Context, msg: &Message, mut args: Args) -> Comma
     };
 
     match update_snapshot_channel(&msg.guild_id.unwrap().as_u64(), &channel) {
-        Ok(e) => msg.reply(ctx, format!("Successfully set channel to {}", str_arg)).await?,
-        Err(e) => msg.reply(ctx, "Could not set the snapshot channel, this is a fault with my code.").await?
+        Ok(_) => msg.reply(ctx, format!("Successfully set channel to {}", str_arg)).await?,
+        Err(_) => msg.reply(ctx, "Could not set the snapshot channel, this is a fault with my code.").await?
     };
 
     Ok(())
-    
+
 }

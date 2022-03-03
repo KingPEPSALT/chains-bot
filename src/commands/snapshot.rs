@@ -2,13 +2,7 @@ use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::{channel::Message, id::ChannelId},
     prelude::Context,
-    futures::StreamExt
 };
-use std::{
-    fs::File,
-    io::Write,
-    env
-}; 
 
 use crate::db::get_guild;
 #[command] 
@@ -35,7 +29,7 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         }
     };
 
-    msg.delete(&ctx.http).await?;
+    msg.delete(ctx).await?;
 
     let mut log_file = String::new();
     let messages = msg.channel_id.messages(&ctx.http, |retriever| retriever.limit(qty)).await?;
@@ -66,7 +60,8 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     if let Err(e) = ChannelId::from(channel)
         .send_files(
-            &ctx.http, vec![(log_file.as_bytes(), "log_file.txt")],
+            &ctx.http, 
+            vec![(log_file.as_bytes(), "log_file.txt")],
             |m| m.content(format!("`Snapshot File - {}`", msg.timestamp.to_string()))
         ).await
     {

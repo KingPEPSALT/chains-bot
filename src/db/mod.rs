@@ -37,7 +37,7 @@ pub fn get_guild(_guild_id: &u64) -> Result<Guild, DBError>{
 pub fn add_guild(_guild_id: &u64) -> Result<Guild, DBError>{
     let connection = Connection::open(&PATH)?;
     match connection.execute("INSERT INTO guild VALUES (?, NULL, NULL)", params![_guild_id]) {
-        Ok(t) => Ok(Guild{
+        Ok(_) => Ok(Guild{
             guild_id: *_guild_id,
             ..DEFAULT_GUILD
         }),

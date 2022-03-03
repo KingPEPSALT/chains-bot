@@ -8,13 +8,13 @@ use commands::{ping::*, snapshot::*, snapshot_channel::*};
 
 use serenity::{
     async_trait,
-    model::{event::{ResumedEvent}, gateway::Ready, prelude::Guild},
+    model::{event::ResumedEvent, gateway::Ready, prelude::Guild},
     framework::{standard::macros::group, StandardFramework},
     http::Http,
     client::bridge::gateway::ShardManager,
     prelude::*,
 };
-use crate::db::{create_database, add_guild};
+use crate::db::add_guild;
 
 extern crate tokio;
 
@@ -51,7 +51,7 @@ impl EventHandler for Handler {
 async fn main() {
 
     //create_database().expect("Could not create database...");
-    
+
     let token = dotenv::var("DISCORD_TOKEN")
         .expect("Expected a token in the environment");
 
