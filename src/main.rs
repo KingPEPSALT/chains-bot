@@ -1,7 +1,7 @@
 pub mod commands;
 pub mod db;
 
-use db::clear_compliancies;
+//use db::clear_compliancies;
 use dotenv;
 use std::{sync::Arc, collections::HashSet};
 
