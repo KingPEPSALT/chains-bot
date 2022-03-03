@@ -1,16 +1,14 @@
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
-    model::{channel::Message, id::ChannelId},
-    prelude::{Context}
+    model::{channel::{Message}, id::ChannelId},
+    prelude::{Context},
 };
 
-use crate::db::get_guild;
+use crate::db::{get_guild};
 #[command] 
 #[num_args(1)]
 #[aliases(log_messages, log, snap, snap_messages, snapshot_messages)]
 async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
-
-    let qty = args.single::<u64>().unwrap();
 
     let request = match get_guild(msg.guild_id.unwrap().as_u64()) 
     {
@@ -19,7 +17,8 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
             msg.reply(ctx, format!("Could not get guild from database | {} | This is an error within the code.", e.to_string())).await?;
             return Ok(());
         },
-    }; 
+    };
+
     if ! (match request.mod_role
     {
         Some(t) => msg.author.has_role(ctx, msg.guild_id.unwrap(), t).await?,
@@ -29,6 +28,15 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         msg.reply(ctx, "You don't have the required role!").await?;
         return Ok(());
     }
+
+    let qty = args.single::<u64>().unwrap();
+
+    if ! request.disclaimer_compliant {
+
+        msg.reply(ctx, format!("A server admin must accept the {}disclaimer", dotenv::var("DISCORD_PREFIX").unwrap())).await?;
+        return Ok(());
+    }
+
     
     let channel = match request.snapshot_channel
     { 

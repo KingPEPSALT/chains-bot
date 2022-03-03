@@ -1,10 +1,11 @@
 pub mod commands;
 pub mod db;
 
+use db::{add_column, populate_column, /*create_database*/};
 use dotenv;
 use std::{sync::Arc, collections::HashSet};
 
-use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*};
+use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*};
 
 use serenity::{
     async_trait,
@@ -26,7 +27,7 @@ impl TypeMapKey for ShardManagerContainer{
 
 
 #[group]
-#[commands(ping, snapshot, snapshot_channel, mod_role)]
+#[commands(ping, snapshot, snapshot_channel, mod_role, disclaimer)]
 struct General;
 
 struct Handler;
@@ -51,6 +52,8 @@ impl EventHandler for Handler {
 async fn main() {
 
     //create_database().expect("Could not create database...");
+    //add_column().expect("Could not alter database.");
+    //populate_column().expect("Couldn't populate column");
 
     let token = dotenv::var("DISCORD_TOKEN")
         .expect("Expected a token in the environment");
@@ -69,7 +72,7 @@ async fn main() {
 
 
     let framework = StandardFramework::new()
-            .configure(|c| c.owners(owners).prefix("!"))
+            .configure(|c| c.owners(owners).prefix(dotenv::var("DISCORD_PREFIX").unwrap()))
             .group(&GENERAL_GROUP);
 
     let mut client =
