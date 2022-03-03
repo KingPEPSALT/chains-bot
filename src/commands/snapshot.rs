@@ -10,38 +10,40 @@ use std::{
     env
 }; 
 
-use crate::db;
+use crate::db::get_guild;
 #[command] 
-#[min_args(1)]
-async fn log(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
+#[num_args(1)]
+#[aliases(log_messages, log, snap, snap_messages, snapshot_messages)]
+async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
     let qty = args.single::<u64>().unwrap();
-    let request = match db::get_guild(msg.guild_id.unwrap().as_u64()) {
+    let request = match get_guild(msg.guild_id.unwrap().as_u64()) {
         Ok(t) => t,
         Err(e) => {
             msg.reply(ctx, e.to_string()).await?;
             return Ok(());
         },
     }; 
-    let channel = match request.logging_channel_id
+    let channel = match request.snapshot_channel
     { 
         Some(t) => t,
         None => {
-            msg.reply(ctx, "No logging channel is set for the server.").await?;
+            msg.reply(ctx, "No snapshot channel is set for the server.").await?;
             return Ok(());
         }
     };
     let mut log_file = String::new();
-    log_file = format!("{lf}\nLOG_FILE [{name}{disc} ({id})] [{q} MESSAGES]", lf = log_file, q = qty, name = msg.author.name, disc = msg.author.discriminator, id = msg.author.id.as_u64());
     msg.delete(&ctx.http).await?;
 
     let messages = msg.channel_id.messages(&ctx.http, |retriever| retriever.limit(qty)).await?;
     let mut iter = messages.iter().rev();
-    
+    let mut true_qty = 0; 
     while let Some(message) = iter.next() {
+        true_qty = true_qty + 1;
         log_file = format!("{lf}\n[{name}{disc} ({id})]", lf = log_file, name = message.author.name, disc = message.author.discriminator, id = message.author.id.as_u64());
         log_file = format!("{lf}\n[{time}] {content}\n", lf = log_file, time = message.timestamp.to_string(), content = message.content);
     };
-    
+    log_file = format!("SNAPSHOT [REQUESTOR: {name}{disc} ({id})] [{q} MESSAGES]\n\n{lf}", lf = log_file, q = true_qty, name = msg.author.name, disc = msg.author.discriminator, id = msg.author.id.as_u64());
+
     if let Err(e) = ChannelId::from(channel).send_files(&ctx.http, vec![(log_file.as_bytes(), "log_file.txt")], |m| m.content(format!("`Logging File - {}`", msg.timestamp.to_string()))).await{
         msg.reply(ctx, e.to_string() + "| There was an error sending the log file.").await?;
     };      

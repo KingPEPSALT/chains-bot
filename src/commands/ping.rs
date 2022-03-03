@@ -5,6 +5,6 @@ use serenity::prelude::*;
 #[command]
 pub async fn ping(ctx: &Context, msg: &Message, _args: Args) -> CommandResult{
     msg.reply(ctx, "Pong!").await?;
-
+    
     Ok(())
 }

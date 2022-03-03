@@ -1,3 +1,3 @@
 pub mod ping;
-pub mod log;
-pub mod setloggingchannel;
+pub mod snapshot;
+pub mod snapshot_channel;

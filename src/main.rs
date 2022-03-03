@@ -4,7 +4,7 @@ pub mod db;
 use dotenv;
 use std::{sync::Arc, collections::HashSet};
 
-use commands::{ping::*, log::*, setloggingchannel::*};
+use commands::{ping::*, snapshot::*, snapshot_channel::*};
 
 use serenity::{
     async_trait,
@@ -26,7 +26,7 @@ impl TypeMapKey for ShardManagerContainer{
 
 
 #[group]
-#[commands(ping, log, setloggingchannel)]
+#[commands(ping, snapshot, snapshot_channel)]
 struct General;
 
 struct Handler;
@@ -49,7 +49,7 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
-
+    //create_database().expect("Could not create database...");
     let token = dotenv::var("DISCORD_TOKEN")
         .expect("Expected a token in the environment");
 
