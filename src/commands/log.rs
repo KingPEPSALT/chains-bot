@@ -8,9 +8,10 @@ use std::{
     fs::File,
     io::Write,
     env
-};
+}; 
+
 use crate::db;
-#[command] FUCKKKKKK FUCK XD LOLE 
+#[command] 
 #[min_args(1)]
 async fn log(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
     let qty = args.single::<u64>().unwrap();
