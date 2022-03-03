@@ -1,8 +1,8 @@
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
-    model::{channel::{Message}, id::ChannelId},
-    prelude::{Context},
-    collector::reaction_collector::CollectReaction, futures::StreamExt, utils::Colour
+    model::channel::Message,
+    prelude::Context,
+    futures::StreamExt, utils::Colour
 };
 
 use crate::db::{get_guild, update_compliancy};

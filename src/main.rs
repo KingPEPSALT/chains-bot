@@ -1,7 +1,7 @@
 pub mod commands;
 pub mod db;
 
-use db::{add_column, populate_column, /*create_database*/};
+//use db::{add_column, populate_column, create_database};
 use dotenv;
 use std::{sync::Arc, collections::HashSet};
 
