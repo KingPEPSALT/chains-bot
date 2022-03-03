@@ -1,7 +1,7 @@
 pub mod commands;
 pub mod db;
 
-//use db::{add_column, populate_column, create_database};
+use db::clear_compliancies;
 use dotenv;
 use std::{sync::Arc, collections::HashSet};
 
@@ -51,9 +51,7 @@ impl EventHandler for Handler {
 #[tokio::main]
 async fn main() {
 
-    //create_database().expect("Could not create database...");
-    //add_column().expect("Could not alter database.");
-    //populate_column().expect("Couldn't populate column");
+    //clear_compliancies().expect("Couldn't populate column");
 
     let token = dotenv::var("DISCORD_TOKEN")
         .expect("Expected a token in the environment");

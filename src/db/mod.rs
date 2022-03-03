@@ -10,8 +10,9 @@ const DEFAULT_GUILD : Guild = Guild{
     mod_role: None,
     disclaimer_compliant: false,
 };
+/* Helper function
 pub fn create_database() -> Result<Connection, DBError>{
-
+    
     let connection = Connection::open(&PATH)?;
     match connection.execute(
         "CREATE TABLE guild (
@@ -24,8 +25,9 @@ pub fn create_database() -> Result<Connection, DBError>{
         Ok(_) => Ok(connection),
         Err(e) => Err(e)
     }
-
+    
 }
+*/
 pub fn get_guild(_guild_id: &u64) -> Result<Guild, DBError>{
     let connection = Connection::open(&PATH)?;
     connection.query_row("SELECT * FROM guild WHERE id = ?", &[_guild_id], |row| {Ok(Guild{
@@ -70,17 +72,17 @@ pub fn update_compliancy(_guild_id: &u64, compliancy: bool) -> Result<(), DBErro
         Err(e) => Err(e)
     }
 }
-
+/* Helper function 
 pub fn add_column() -> Result<(), DBError>{
     let connection = Connection::open(&PATH)?;
     match connection.execute("ALTER TABLE guild ADD COLUMN disclaimer_compliant INTEGER", []) {
         Ok(_) => Ok(()),
         Err(e) => Err(e)
     }
-
+    
 }
-
-pub fn populate_column()  -> Result<(), DBError>{
+*/
+pub fn clear_compliancies()  -> Result<(), DBError>{
     let connection = Connection::open(&PATH)?;
     match connection.execute("UPDATE guild SET disclaimer_compliant = FALSE WHERE TRUE", []){
         Ok(_) => Ok(()),

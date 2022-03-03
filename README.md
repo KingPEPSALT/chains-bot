@@ -8,5 +8,6 @@ Chains primarily focuses on easy to set up, easy to use moderation tools such as
 
 - [x] Snapshotting chat
 - [x] Configuring snapshot chat and moderation role
+- [ ] Snapshot chat between two messages
 - [ ] Reports and warn with reason tools
 - [ ] Configuring punishments for an nth warn
