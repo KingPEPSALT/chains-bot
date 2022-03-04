@@ -1,15 +1,16 @@
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
-    model::{channel::Message, id::ChannelId},
-    prelude::Context,
+    model::{channel::Message, id::ChannelId, prelude::MessageId},
+    prelude::Context
 };
-
+use std::mem::swap;
 use crate::db::{get_guild};
 #[command] 
-#[num_args(1)]
-#[aliases(log_messages, log, snap, snap_messages, snapshot_messages)]
-async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
-
+#[min_args(1)]
+#[max_args(2)]
+#[aliases(log_messages, log, snap, snap_messages, snapshot_messages, snip)]
+async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
+    
     let request = match get_guild(msg.guild_id.unwrap().as_u64()) 
     {
         Ok(guild_model) => guild_model,
@@ -18,6 +19,12 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
             return Ok(());
         },
     };
+    
+    if ! request.disclaimer_compliant {
+
+        msg.reply(ctx, format!("A server admin must accept the `{}disclaimer`", dotenv::var("DISCORD_PREFIX").unwrap())).await?;
+        return Ok(());
+    }
 
     if ! (match request.mod_role
     {
@@ -29,15 +36,7 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
         return Ok(());
     }
 
-    let input_qty = args.single::<u64>().unwrap();
 
-    if ! request.disclaimer_compliant {
-
-        msg.reply(ctx, format!("A server admin must accept the `{}disclaimer`", dotenv::var("DISCORD_PREFIX").unwrap())).await?;
-        return Ok(());
-    }
-
-    
     let _channel_id = match request.snapshot_channel
     { 
         Some(id) => id,
@@ -49,15 +48,40 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
 
     msg.delete(ctx).await?;
 
+    let messages: Vec<Message>;
+    let arg_array = args.raw().collect::<Vec<&str>>();
+
+    let mut pre_message: u64 = 0;
+    let mut post_message: u64;
+    if arg_array.len() == 2{
+        // change messages into message id if they are links 
+        let parse_helper = |n :usize| arg_array[n].parse::<u64>().unwrap_or_else(|_| arg_array[0].split("/").nth(6).unwrap().parse::<u64>().unwrap());
+        [pre_message, post_message] =  [parse_helper(0), parse_helper(1)];
+        // convulted code to orientate the messages in the correct order and include the message given in the snip 
+        if MessageId(post_message).created_at() > MessageId(pre_message).created_at() {
+            swap(&mut pre_message, &mut post_message)
+        }
+        post_message = *msg.channel_id.messages(ctx, |message_retriever|
+            message_retriever
+                .before(post_message).limit(1)
+        ).await?[0].id.as_u64();
+        messages = msg.channel_id.messages(ctx, |message_retriever| 
+            message_retriever
+                .after(post_message)
+        ).await?;
+    }else{
+        messages = msg.channel_id.messages(ctx, |message_retriever| 
+            message_retriever.limit(arg_array[0].parse::<u64>().unwrap())
+        ).await?;
+    }
+    
     let mut snapshot_file = String::new();
-    let messages = msg.channel_id.messages(ctx, |message_retriever| message_retriever.limit(input_qty)).await?;
     let mut message_iter = messages.iter().rev();
     let mut true_qty = 0; 
 
     while let Some(message) = message_iter.next() {
         true_qty = true_qty + 1;
         let mut attachments = String::new();
-
         message.attachments.iter().for_each(|a| attachments += &format!("[ATTACHMENT: {}]\n", a.url));
         
         snapshot_file = format!(
@@ -70,6 +94,10 @@ async fn snapshot(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
             message.content,
             attachments
         );
+        if &pre_message == message.id.as_u64(){
+            break;
+        }
+
     };
 
     snapshot_file = format!(
