@@ -30,20 +30,20 @@ async fn disclaimer(ctx: &Context, msg: &Message, _: Args) -> CommandResult{
                 { 
                 embed.title("TERMS OF SERVICE DISSEMINATION")
                 .colour(Colour::DARK_GREEN)
-                .description(format!("{}\n\n\nReact with a :white_check_mark: to agree to these conditions or a :x: opt out of this.", DISSEMINATION));
+                .description(format!("{}\n\n\nReact with a :green_circle: to agree to these conditions or a :red_circle: opt out of this.", DISSEMINATION));
                 return embed;
                 })
         }).await?;
-        disclaimer.react(ctx, '✅').await?;
-        disclaimer.react(ctx, '❌').await?;
+        disclaimer.react(ctx, '🟢').await?;
+        disclaimer.react(ctx, '🔴').await?;
         let mut react_collector = disclaimer
             .await_reactions(&ctx)
             .timeout(tokio::time::Duration::from_secs(20))
-            .filter(|e| e.emoji.as_data().as_str() == "✅"||e.emoji.as_data().as_str() == "❌")
+            .filter(|e| e.emoji.as_data().as_str() == "🟢"||e.emoji.as_data().as_str() == "🔴")
             .author_id(msg.author.id).await;
 
         if let Some(e) = react_collector.next().await{
-            update_compliancy(&msg.guild_id.unwrap().as_u64(), e.as_inner_ref().emoji.as_data().as_str()=="✅")?;
+            update_compliancy(&msg.guild_id.unwrap().as_u64(), e.as_inner_ref().emoji.as_data().as_str()=="🟢")?;
         }
         disclaimer.delete(ctx).await?;
         msg.delete(ctx).await?;

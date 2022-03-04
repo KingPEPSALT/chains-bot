@@ -3,7 +3,7 @@ use serenity::{
     model::{channel::Message, id::ChannelId, prelude::MessageId},
     prelude::Context
 };
-use std::mem::swap;
+use std::{mem::swap, num::ParseIntError};
 use crate::db::{get_guild};
 #[command] 
 #[min_args(1)]
@@ -55,20 +55,39 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     let mut post_message: u64;
     if arg_array.len() == 2{
         // change messages into message id if they are links 
-        let parse_helper = |n :usize| arg_array[n].parse::<u64>().unwrap_or_else(|_| arg_array[0].split("/").nth(6).unwrap().parse::<u64>().unwrap());
-        [pre_message, post_message] =  [parse_helper(0), parse_helper(1)];
+        let parse_helper = |n :usize| arg_array[n].parse::<u64>().or_else(|_| arg_array[n].split("/").nth(6).unwrap().parse::<u64>());
+        [pre_message, post_message] = match [parse_helper(0), parse_helper(1)] {
+            [Ok(a), Ok(b)] => [a,b],
+            _ => {
+                msg.reply(ctx, "That isn't a valid message ID.").await?;
+                return Ok(());
+            }
+        };
+        
         // convulted code to orientate the messages in the correct order and include the message given in the snip 
         if MessageId(post_message).created_at() > MessageId(pre_message).created_at() {
             swap(&mut pre_message, &mut post_message)
         }
-        post_message = *msg.channel_id.messages(ctx, |message_retriever|
+        post_message = match msg.channel_id.messages(ctx, |message_retriever|
             message_retriever
                 .before(post_message).limit(1)
-        ).await?[0].id.as_u64();
-        messages = msg.channel_id.messages(ctx, |message_retriever| 
+        ).await {
+            Ok(t) => *t[0].id.as_u64(),
+            _ => {
+                msg.reply(ctx, "That message is not in this channel or could not be resolved.").await?;
+                return Ok(());
+            }
+        };
+        messages = match msg.channel_id.messages(ctx, |message_retriever| 
             message_retriever
                 .after(post_message)
-        ).await?;
+        ).await{
+            Ok(t) => t,
+            _ => {
+                msg.reply(ctx, "That message is not in this channel or could not be resolved.").await?;
+                return Ok(());
+            }
+        };
     }else{
         messages = msg.channel_id.messages(ctx, |message_retriever| 
             message_retriever.limit(arg_array[0].parse::<u64>().unwrap())
