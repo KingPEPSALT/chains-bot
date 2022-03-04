@@ -13,19 +13,20 @@ async fn snapshot_channel(ctx: &Context, msg: &Message, mut args: Args) -> Comma
         msg.reply(ctx, "You need administrator for this command.").await?;
         return Ok(());
     }
+
+    let channel_mention = args.single::<String>().unwrap();
     
-    let str_arg = args.single::<String>().unwrap();
-    
-    let channel = match str_arg[2..str_arg.len()-1].parse::<u64>(){
-        Ok(t) => t,
+    // grab the <#id> channel mention and parse the id part of it as a u64 integer
+    let channel_id = match channel_mention[2..channel_mention.len()-1].parse::<u64>(){
+        Ok(id) => id,
         Err(_) => {
             msg.reply(ctx, "That is not a valid channel.").await?;
             return Ok(());
         }
     };
 
-    match update_snapshot_channel(&msg.guild_id.unwrap().as_u64(), &channel) {
-        Ok(_) => msg.reply(ctx, format!("Successfully set channel to `{}`", str_arg)).await?,
+    match update_snapshot_channel(&msg.guild_id.unwrap().as_u64(), &channel_id) {
+        Ok(_) => msg.reply(ctx, format!("Successfully set channel to `{}`", channel_mention)).await?,
         Err(_) => msg.reply(ctx, "Could not set the snapshot channel, this is a fault with my code.").await?
     };
 

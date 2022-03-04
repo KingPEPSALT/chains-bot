@@ -16,10 +16,10 @@ async fn mod_role(ctx: &Context, msg: &Message, _: Args) -> CommandResult{
         return Ok(());
     }
     
-    let role = msg.mention_roles[0];
+    let role_id = msg.mention_roles[0];
 
-    match update_mod_role(&msg.guild_id.unwrap().as_u64(), &role.as_u64()) {
-        Ok(_) => msg.reply(ctx, format!("Successfully set moderation role to `<@&{}>`", role.as_u64())).await?,
+    match update_mod_role(&msg.guild_id.unwrap().as_u64(), &role_id.as_u64()) {
+        Ok(_) => msg.reply(ctx, format!("Successfully set moderation role to `<@&{}>`", role_id.as_u64())).await?,
         Err(_) => msg.reply(ctx, "Could not set the moderation role, this is a fault with my code.").await?
     };
 
