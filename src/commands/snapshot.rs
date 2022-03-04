@@ -3,7 +3,7 @@ use serenity::{
     model::{channel::Message, id::ChannelId, prelude::MessageId},
     prelude::Context
 };
-use std::{mem::swap, num::ParseIntError};
+use std::{mem::swap};
 use crate::db::{get_guild};
 #[command] 
 #[min_args(1)]
@@ -54,6 +54,7 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     let mut pre_message: u64 = 0;
     let mut post_message: u64;
     if arg_array.len() == 2{
+
         // change messages into message id if they are links 
         let parse_helper = |n :usize| arg_array[n].parse::<u64>().or_else(|_| arg_array[n].split("/").nth(6).unwrap().parse::<u64>());
         [pre_message, post_message] = match [parse_helper(0), parse_helper(1)] {
@@ -63,7 +64,6 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
                 return Ok(());
             }
         };
-        
         // convulted code to orientate the messages in the correct order and include the message given in the snip 
         if MessageId(post_message).created_at() > MessageId(pre_message).created_at() {
             swap(&mut pre_message, &mut post_message)
