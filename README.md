@@ -10,6 +10,9 @@ Chains primarily focuses on easy to set up, easy to use moderation tools such as
 - [x] Configuring snapshot chat and moderation role
 - [x] Snapshot chat between two messages
 - [ ] Put a user on watch to log certain actions
+    - [x] Log messages
+    - [ ] Log message edits
+    - [ ] Log username/nickname changes
 - [ ] Reports and warn with reason tools
 - [ ] Configuring punishments for an nth warn
 
