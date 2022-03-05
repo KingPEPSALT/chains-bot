@@ -39,8 +39,8 @@ pub fn create_watched_members_table() -> ExecutionResult{
     let connection = Connection::open(&PATH)?;
     connection.execute(
         "CREATE TABLE WatchedMembers (
-            userId          INTEGER         NOT NULL,
-            guildId         INTEGER         NOT NULL,
+            guildId          INTEGER         NOT NULL,
+            userId           INTEGER         NOT NULL,
             PRIMARY KEY (userId, guildId)
         )",
         // this should be a part of the SQL but doesnt work currently.
@@ -63,36 +63,38 @@ pub fn delete_guild(guild_id: &u64) -> ExecutionResult{
     })
 }
 
-pub fn cache_watched_members(data_cache: &mut HashMap<u64, Vec<u64>>) -> Result<()>{
+pub fn cache_watched_members() -> Result<HashMap<u64, Vec<u64>>>{
     CONNECTION.with(|con|{
-        let mut stmt = con.prepare("SELECT * FROM WatchedUsers")?;
+        let mut stmt = con.prepare("SELECT * FROM WatchedMembers")?;
         let mut rows = stmt.query([])?;
+        let mut data_cache: HashMap<u64, Vec<u64>> = HashMap::new();
         while let Some(row) = rows.next().unwrap(){
-            
-            match data_cache.get_mut(&row.get(1)?){
+            match data_cache.get_mut(&row.get(0)?){
                 Some(t) => {
-                    t.push(row.get(0)?);
+                    t.push(row.get(1)?);
                 },
                 None => {
-                    data_cache.insert(row.get(1)?, vec![row.get(0)?]);
+                    data_cache.insert(row.get(0)?, vec![row.get(1)?]);
                 }
             };
         }
-        Ok(())
+        Ok(data_cache)
     })
 }
 
-pub fn cache_watch_channels(data_cache: &mut HashMap<u64, u64>) -> Result<()>{
+pub fn cache_watch_channels() -> Result<HashMap<u64, u64>>{
     CONNECTION.with(|con|{
-        let mut stmt = con.prepare("SELECT guildId, watchChannelId")?;
+        let mut stmt = con.prepare("SELECT guildId, watchChannelId From Guilds")?;
         let mut rows = stmt.query([])?;
+        let mut data_cache: HashMap<u64, u64> = HashMap::new();
         while let Some(row) = rows.next().unwrap(){
-            data_cache.insert(row.get(0)?, row.get(1)?);
-        };
-        Ok(())
+            data_cache.insert(row.get(0)?, row.get::<_, u64>(1).or::<u64>(Ok(0)).unwrap());
+        }
+        Ok(data_cache)
     })
 }
 pub fn add_watch_channel(guild_id: &u64, channel_id: &u64, cache: &mut HashMap<u64, u64>) -> ExecutionResult{
+
     CONNECTION.with(|con|{
         con.execute(
             "UPDATE Guilds SET watchChannelId = ?1 WHERE guildId = ?2", params![channel_id, guild_id]

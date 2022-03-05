@@ -1,7 +1,7 @@
 pub mod commands;
 pub mod db;
 
-use db::{delete_guild, cache_watched_members, cache_watch_channels, create_watched_members_table, create_guilds_table};
+use db::{delete_guild, cache_watched_members, cache_watch_channels};
 //use db::clear_compliancies;
 use dotenv;
 use std::{sync::Arc, collections::{HashSet, HashMap}};
@@ -27,6 +27,7 @@ impl TypeMapKey for WatchMemberHandler{
 }
 
 pub struct WatchChannelHandler;
+
 impl TypeMapKey for WatchChannelHandler{
     type Value = HashMap<u64, u64>;
 }
@@ -44,7 +45,7 @@ struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
-
+    
     async fn ready(&self, _: Context, ready: Ready) {
         println!("{} is connected.", ready.user.name);
     }
@@ -65,34 +66,34 @@ impl EventHandler for Handler {
                 ChannelId(*data.get::<WatchChannelHandler>().expect("No WatchChannelHandler in data").get(
                     &msg.guild_id.unwrap().as_u64()
                 ).unwrap())
-                    .send_message(&ctx.http, |m| {
-                        m.embed(|e|{
-                            e.colour(Colour::DARK_TEAL)
-                            .title(format!("{}#{} ({})",msg.author.name, msg.author.discriminator, msg.author.id.as_u64()))
-                            .description(msg.content)
-                        })
-                    }
-                ).await.unwrap();
-            }
+                .send_message(&ctx.http, |m| {
+                    m.embed(|e|{
+                        e.colour(Colour::DARK_TEAL)
+                        .title(format!("{}#{} ({})",msg.author.name, msg.author.discriminator, msg.author.id.as_u64()))
+                        .description(msg.content)
+                    })
+                }
+            ).await.unwrap();
         }
-
-    }
-    async fn resume(&self, _: Context, _: ResumedEvent){
-        println!("Resumed.");
     }
 }
+async fn resume(&self, _: Context, _: ResumedEvent){
+    println!("Resumed.");
+}
+}
+//use db::{create_watched_members_table, create_guilds_table};
 
 #[tokio::main]
 async fn main() {
-
-    create_watched_members_table().expect("Could not create WatchedMembers table.");
-    create_guilds_table().expect("Could not create Guilds table.");
-
+    
+    //create_watched_members_table().expect("Could not create WatchedMembers table.");
+    //create_guilds_table().expect("Could not create Guilds table.");
+    
     let token = dotenv::var("DISCORD_TOKEN")
-        .expect("Expected a token in the environment");
+    .expect("Expected a token in the environment");
 
     let http = Http::new_with_token(&token);
-
+    
     let (owners, _bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
             let mut owners = HashSet::new();
@@ -107,12 +108,25 @@ async fn main() {
     let framework = StandardFramework::new()
             .configure(|c| c.owners(owners).prefix(dotenv::var("DISCORD_PREFIX").unwrap()))
             .group(&GENERAL_GROUP);
+    let wch = cache_watch_channels().expect("Could not cache into WatchChannelHandler");
+    let wmem = cache_watched_members().expect("Could not cache into WatchMemeberHandler");
 
+    println!("\nLooking through WatchChannel cache.");
+    for (k, v) in &wch{
+        println!("{} - {}", k, v);
+    }
+    println!("\nLooking through WatchMember cache.");
+    for (k, v) in &wmem{
+        println!("{}", k);
+        for tv in v{
+            println!("  |-{}", tv);
+        }
+    }
     let mut client =
         Client::builder(&token)
             .framework(framework)
-            .type_map_insert::<WatchChannelHandler>(HashMap::new())
-            .type_map_insert::<WatchMemberHandler>(HashMap::new())
+            .type_map_insert::<WatchChannelHandler>(wch)
+            .type_map_insert::<WatchMemberHandler>(wmem)
             .event_handler(Handler)
             .await
             .expect("Could not create client");
@@ -120,9 +134,5 @@ async fn main() {
     if let Err(e) = client.start().await {
         println!("Client error: {:?}", e);
     }
-    let mut data = client.data.write().await;
-    cache_watch_channels(data.get_mut::<WatchChannelHandler>().unwrap())
-        .expect("Could not cache into WatchChannelHandler");
-    cache_watched_members(data.get_mut::<WatchMemberHandler>().unwrap())
-        .expect("Could not cache into WatchMemeberHandler");
+   
 }
