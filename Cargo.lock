@@ -129,6 +129,7 @@ name = "chains_bot"
 version = "0.1.0"
 dependencies = [
  "dotenv",
+ "fallible-iterator",
  "rusqlite",
  "serenity",
  "tokio",
