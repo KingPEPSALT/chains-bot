@@ -104,8 +104,14 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
         message.attachments.iter().for_each(|a| attachments += &format!("[ATTACHMENT: {}]\n", a.url));
 
         if !nickname_map.contains_key(&message.author.id){
-            nickname_map.insert(message.author.id, message.author.nick_in(&ctx.http, request.guild_id).await.unwrap_or("None".into()));
+            let nickname_monad = message.author.nick_in(&ctx.http, request.guild_id).await;
+            let nickname = match nickname_monad {
+                Some(t) => format!("({})", t),
+                None => "".into()
+            };
+            nickname_map.insert(message.author.id, nickname);
         }
+
 
         snapshot_file = format!(
             "{}\n[{}]\n[{}({})#{} ({})] {}\n{}",
