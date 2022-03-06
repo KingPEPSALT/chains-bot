@@ -119,7 +119,20 @@ pub fn add_watched_member(guild_id: &u64, user_id: &u64, cache: &mut HashMap<u64
         Ok(())
     })
 }
-
+pub fn remove_watched_member(guild_id: &u64, user_id: &u64, cache: &mut HashMap<u64, Vec<u64>>) -> ExecutionResult{
+    CONNECTION.with(|con|{
+        con.execute(
+            "DELETE FROM WatchedMembers WHERE guildId = ?1 AND userId = ?2", params![guild_id, user_id]
+        )?;
+        match cache.get_mut(guild_id){
+            Some(t) => {
+                t.remove(t.iter().position(|id| id == user_id).unwrap()); // should maybe refactor to use a hashable set or something
+            },
+            _ => ()
+        };
+        Ok(())
+    })
+}
 pub fn select(why_params: &[(&str, &str)]) -> Result<Vec<Guild>, DBError>{
     // 455 character one liner...
     CONNECTION.with::<_, Result<Vec<Guild>, DBError>>(|con|{
