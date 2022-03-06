@@ -1,9 +1,9 @@
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
-    model::{channel::Message, id::ChannelId, prelude::MessageId},
+    model::{channel::Message, id::{ChannelId, UserId}, prelude::MessageId},
     prelude::Context
 };
-use std::{mem::swap};
+use std::{mem::swap, collections::HashMap};
 use crate::db::{get_guild};
 #[command] 
 #[min_args(1)]
@@ -97,21 +97,23 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     let mut snapshot_file = String::new();
     let mut message_iter = messages.iter().rev();
     let mut true_qty = 0; 
-
+    let mut nickname_map: HashMap<UserId, String> = HashMap::new();
     while let Some(message) = message_iter.next() {
         true_qty = true_qty + 1;
         let mut attachments = String::new();
         message.attachments.iter().for_each(|a| attachments += &format!("[ATTACHMENT: {}]\n", a.url));
-        let nick = message.author.nick_in(&ctx.http, request.guild_id).await.unwrap_or("None".into());
-        //let nick = message.author_nick(&ctx.http).await.unwrap_or("None".into());
+
+        if !nickname_map.contains_key(&message.author.id){
+            nickname_map.insert(message.author.id, message.author.nick_in(&ctx.http, request.guild_id).await.unwrap_or("None".into()));
+        }
 
         snapshot_file = format!(
-            "{}\n[{}]\n[{}#{}({}) ({})] {}\n{}",
+            "{}\n[{}]\n[{}({})#{} ({})] {}\n{}",
             snapshot_file,
             message.timestamp.to_string(), 
             message.author.name, 
+            nickname_map.get(&message.author.id).unwrap(),
             message.author.discriminator, 
-            nick,
             message.author.id.as_u64(), 
             message.content,
             attachments
@@ -124,10 +126,10 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
 
     let requester_tag = msg.author.nick_in(ctx, msg.guild_id.unwrap()).await.unwrap_or(" ".to_string());
     snapshot_file = format!(
-        "SNAPSHOT [REQUESTOR: {}#{}({}) ({})] [{} MESSAGES]\n\n{}", 
+        "SNAPSHOT [REQUESTOR: {}({})#{} ({})] [{} MESSAGES]\n\n{}", 
         msg.author.name, 
-        msg.author.discriminator, 
         requester_tag,
+        msg.author.discriminator, 
         msg.author.id.as_u64(),
         true_qty,
         snapshot_file
