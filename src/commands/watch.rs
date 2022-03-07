@@ -37,6 +37,8 @@ async fn watch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
         }else{
             add_watched_member(&guild, &user, cache)?;
         }
+    } else {
+        add_watched_member(&guild, &user, cache)?;
     };
     msg.delete(ctx).await?;
     Ok(())
