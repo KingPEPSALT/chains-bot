@@ -1,4 +1,4 @@
-use crate::db::update_snapshot_channel;
+use crate::{db::update_snapshot_channel, commands::parse_channel};
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::channel::Message,
@@ -14,19 +14,16 @@ async fn snapshot_channel(ctx: &Context, msg: &Message, mut args: Args) -> Comma
         return Ok(());
     }
 
-    let channel_mention = args.single::<String>().unwrap();
-    
-    // grab the <#id> channel mention and parse the id part of it as a u64 integer
-    let channel_id = match channel_mention[2..channel_mention.len()-1].parse::<u64>(){
+    let channel_id = match parse_channel(args.single::<String>().unwrap()){
         Ok(id) => id,
         Err(_) => {
-            msg.reply(ctx, "That is not a valid channel.").await?;
-            return Ok(());
+            msg.reply(ctx, "That is not a valid channel ID or channel mention.").await?;
+            return Ok(())
         }
     };
 
     match update_snapshot_channel(&msg.guild_id.unwrap().as_u64(), &channel_id) {
-        Ok(_) => msg.reply(ctx, format!("Successfully set channel to `{}`", channel_mention)).await?,
+        Ok(_) => msg.reply(ctx, format!("Successfully set channel to `<#{}>`", channel_id)).await?,
         Err(_) => msg.reply(ctx, "Could not set the snapshot channel, this is a fault with my code.").await?
     };
 

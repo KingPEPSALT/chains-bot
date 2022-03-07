@@ -4,39 +4,19 @@ use serenity::{
     prelude::Context
 };
 use std::{mem::swap, collections::HashMap};
-use crate::db::{get_guild};
+use crate::{commands::enforce_compliancy};
 #[command] 
 #[min_args(1)]
 #[max_args(2)]
 #[aliases(log_messages, log, snap, snap_messages, snapshot_messages, snip)]
 async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     
-    let request = match get_guild(msg.guild_id.unwrap().as_u64()) 
-    {
-        Ok(guild_model) => guild_model,
-        Err(e) => {
-            msg.reply(ctx, format!("Could not get guild from database | {} | This is an error within the code.", e.to_string())).await?;
-            return Ok(());
-        },
+    let guild = *msg.guild_id.unwrap().as_u64();
+    let (compliant, is_request) = enforce_compliancy(ctx, msg, guild).await;
+    if !compliant || is_request.is_none(){
+        return Ok(())
     };
-    
-    if ! request.disclaimer_compliant {
-
-        msg.reply(ctx, format!("A server admin must accept the `{}disclaimer`", dotenv::var("DISCORD_PREFIX").unwrap())).await?;
-        return Ok(());
-    }
-
-    if ! (match request.mod_role
-    {
-        Some(id) => msg.author.has_role(ctx, msg.guild_id.unwrap(), id).await?,
-        _ => false,
-    } || msg.member(ctx).await.unwrap().permissions(ctx).await.unwrap().administrator())
-    {
-        msg.reply(ctx, "You don't have the required role!").await?;
-        return Ok(());
-    }
-
-
+    let request = is_request.unwrap();
     let _channel_id = match request.snapshot_channel
     { 
         Some(id) => id,
@@ -114,7 +94,7 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
 
 
         snapshot_file = format!(
-            "{}\n[{}]\n[{}({})#{} ({})] {}\n{}",
+            "{}\n[{}]\n[{}{}#{} ({})] {}\n{}",
             snapshot_file,
             message.timestamp.to_string(), 
             message.author.name, 
@@ -130,7 +110,7 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
 
     };
 
-    let requester_tag = msg.author.nick_in(ctx, msg.guild_id.unwrap()).await.unwrap_or(" ".to_string());
+    let requester_tag = msg.author.nick_in(ctx, guild).await.unwrap_or(" ".to_string());
     snapshot_file = format!(
         "SNAPSHOT [REQUESTOR: {}({})#{} ({})] [{} MESSAGES]\n\n{}", 
         msg.author.name, 
