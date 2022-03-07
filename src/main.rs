@@ -46,8 +46,23 @@ struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     
-    async fn ready(&self, _: Context, ready: Ready) {
-        println!("{} is connected.", ready.user.name);
+    async fn ready(&self, _: Context, _: Ready) {
+        println!("
+┌────────────────────────────────────────────────────────────────────┐
+│ ▄████████    ▄█    █▄       ▄████████  ▄█  ███▄▄▄▄      ▄████████  │
+│ ███    ███   ███    ███     ███    ███ ███  ███▀▀▀██▄   ███    ███ │
+│ ███    █▀    ███    ███     ███    ███ ███▌ ███   ███   ███    █▀  │
+│ ███         ▄███▄▄▄▄███▄▄   ███    ███ ███▌ ███   ███   ███        │
+│ ███        ▀▀███▀▀▀▀███▀  ▀███████████ ███▌ ███   ███ ▀███████████ │
+│ ███    █▄    ███    ███     ███    ███ ███  ███   ███          ███ │
+│ ███    ███   ███    ███     ███    ███ ███  ███   ███    ▄█    ███ │
+│ ████████▀    ███    █▀      ███    █▀  █▀    ▀█   █▀   ▄████████▀  │
+├───────────────────┬────────────────────────────────────────────────┤
+│  ┬─┐┌─┐┌─┐┌┬┐┬ ┬  ├ pepsalt#1662|Salivala#1787|Anthony Fuller#1767 ┤
+│  ├┬┘├┤ ├─┤ ││└┬┘  ├ https://github.com/KingPEPSALT/chains-bot.git. ┤
+│  ┴└─└─┘┴ ┴─┴┘ ┴ o ├─────────────── <3 have fun! <3 ────────────────┤ 
+└───────────────────┴────────────────────────────────────────────────┘
+");
     }
     async fn guild_create(&self, _: Context, g: Guild, is_new: bool){
         if is_new{
@@ -81,13 +96,20 @@ async fn resume(&self, _: Context, _: ResumedEvent){
     println!("Resumed.");
 }
 }
-//use db::{create_watched_members_table, create_guilds_table};
 
+use db::{create_watched_members_table, create_guilds_table};
 #[tokio::main]
 async fn main() {
     
-    //create_watched_members_table().expect("Could not create WatchedMembers table.");
-    //create_guilds_table().expect("Could not create Guilds table.");
+    println!();
+    match create_watched_members_table(){
+        Err(_) => println!("WatchedMembers table likely exists."),
+        _ => println!("WatchedMembers table created.")
+    }    
+    match create_guilds_table(){
+        Err(_) => println!("Guilds table likely exists."),
+        _ =>    println!("Guilds table created.")
+    }
     
     let token = dotenv::var("DISCORD_TOKEN")
     .expect("Expected a token in the environment");
@@ -118,9 +140,10 @@ async fn main() {
     println!("\nLooking through WatchMember cache.");
     for (k, v) in &wmem{
         println!("{}", k);
-        for tv in v{
-            println!("  |-{}", tv);
+        for i in 0..v.len()-1{
+            println!("  ├─ {}", v[i]);
         }
+        println!("  └─ {}", v[v.len()-1]);
     }
     let mut client =
         Client::builder(&token)
@@ -134,5 +157,5 @@ async fn main() {
     if let Err(e) = client.start().await {
         println!("Client error: {:?}", e);
     }
-   
+
 }
