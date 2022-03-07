@@ -8,7 +8,7 @@ use crate::{db::add_watch_channel, WatchChannelHandler, commands::parse_channel}
 #[command] 
 #[min_args(1)]
 #[max_args(2)]
-#[aliases(monitor_channel)]
+#[aliases(set_watch_channel)]
 async fn watch_channel(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
 
     if !msg.member(ctx).await.unwrap().permissions(ctx).await.unwrap().administrator(){
