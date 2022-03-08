@@ -16,6 +16,9 @@
     - [ ] Log avatar edits.
 - [ ] **Mirror** command
     - [ ] Log a whole channel by *mirroring* it into another channel.
+- [ ] **Trigger** command
+    - [ ] Delete OR log messages based on regex or text
+        - [ ] Trigger database using a guild ID
 - [ ] **Warn** command
     - [ ] Punishment configuration
         - [ ] Different punishment for an n<sup><sub>th</sub></sup> warn.
@@ -24,11 +27,16 @@
 - **Miscellaneous** goals
     - [x] Channel configuration
         - [x] Persistent storage of configuration.
+        - [ ] Allow more configurable channels
+            - [ ] Different channels for different **Watch**ed users
+            - [ ] Different channels for different **Trigger**s
+            - [ ] Allow to specify channels on **Snapshot**
     - [x] Argument parsing
         - [x] Generally allow for any identifying data for an argument interchangeably
             - [x] Message links and IDs are interchangeable
             - [x] User mentions and IDs are interchangeable
             - [x] Channel mention, links and IDs are interchangeable
-
+    - [ ] Add commands and how to use them to the README
+    
 ---
 <img src="http://www.apkmirror.com/wp-content/uploads/2016/07/577d7444b1370.png" alt="Discord" width="20"/> <sup>**pepsalt#1662** | **Salivala#1787** | **Anthony Fuller#1767** :) <3 </sup> 

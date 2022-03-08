@@ -1,22 +1,20 @@
 pub mod commands;
 pub mod db;
+pub mod events;
 
-use db::{delete_guild, cache_watched_members, cache_watch_channels};
-//use db::clear_compliancies;
+use db::{cache_watched_members, cache_watch_channels};
+use events::Handler;
 use dotenv;
 use std::{sync::Arc, collections::{HashSet, HashMap}};
 
 use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*, watch_channel::*, watch::*};
 
 use serenity::{
-    async_trait,
-    model::{event::ResumedEvent, gateway::Ready, prelude::Guild, guild::GuildUnavailable, id::ChannelId, channel::Message},
     framework::{standard::macros::group, StandardFramework},
     http::Http,
     client::bridge::gateway::ShardManager,
-    prelude::*, utils::Colour,
+    prelude::*
 };
-use crate::db::add_guild;
 
 extern crate tokio;
 
@@ -41,61 +39,7 @@ impl TypeMapKey for ShardManagerContainer{
 #[commands(ping, snapshot, snapshot_channel, mod_role, disclaimer, watch, watch_channel)]
 struct General;
 
-struct Handler;
 
-#[async_trait]
-impl EventHandler for Handler {
-    
-    async fn ready(&self, _: Context, _: Ready) {
-        println!("
-┌────────────────────────────────────────────────────────────────────┐
-│ ▄████████    ▄█    █▄       ▄████████  ▄█  ███▄▄▄▄      ▄████████  │
-│ ███    ███   ███    ███     ███    ███ ███  ███▀▀▀██▄   ███    ███ │
-│ ███    █▀    ███    ███     ███    ███ ███▌ ███   ███   ███    █▀  │
-│ ███         ▄███▄▄▄▄███▄▄   ███    ███ ███▌ ███   ███   ███        │
-│ ███        ▀▀███▀▀▀▀███▀  ▀███████████ ███▌ ███   ███ ▀███████████ │
-│ ███    █▄    ███    ███     ███    ███ ███  ███   ███          ███ │
-│ ███    ███   ███    ███     ███    ███ ███  ███   ███    ▄█    ███ │
-│ ████████▀    ███    █▀      ███    █▀  █▀    ▀█   █▀   ▄████████▀  │
-├───────────────────┬────────────────────────────────────────────────┤
-│  ┬─┐┌─┐┌─┐┌┬┐┬ ┬  ├ pepsalt#1662|Salivala#1787|Anthony Fuller#1767 ┤
-│  ├┬┘├┤ ├─┤ ││└┬┘  ├ https://github.com/KingPEPSALT/chains-bot.git. ┤
-│  ┴└─└─┘┴ ┴─┴┘ ┴ o ├─────────────── <3 have fun! <3 ────────────────┤ 
-└───────────────────┴────────────────────────────────────────────────┘
-");
-    }
-    async fn guild_create(&self, _: Context, g: Guild, is_new: bool){
-        if is_new{
-            add_guild(g.id.as_u64()).expect(&format!("Could not add guild to database {}", g.id.as_u64()));
-        }
-    }
-    async fn guild_delete(&self, _: Context, g: GuildUnavailable, _: Option<Guild>){
-        if g.unavailable{
-            delete_guild(g.id.as_u64()).expect(&format!("Could not delete guild from database {}", g.id.as_u64()));
-        }
-    }
-    async fn message(&self, ctx: Context, msg: Message){
-        let data = ctx.data.read().await;
-        if let Some(t) = data.get::<WatchMemberHandler>().expect("No WatchMemberHandler in data.").get(&msg.guild_id.unwrap().as_u64()){
-            if t.contains(msg.author.id.as_u64()){
-                ChannelId(*data.get::<WatchChannelHandler>().expect("No WatchChannelHandler in data").get(
-                    &msg.guild_id.unwrap().as_u64()
-                ).unwrap())
-                .send_message(&ctx.http, |m| {
-                    m.embed(|e|{
-                        e.colour(Colour::DARK_TEAL)
-                        .title(format!("{}#{} ({})",msg.author.name, msg.author.discriminator, msg.author.id.as_u64()))
-                        .description(msg.content)
-                    })
-                }
-            ).await.unwrap();
-        }
-    }
-}
-async fn resume(&self, _: Context, _: ResumedEvent){
-    println!("Resumed.");
-}
-}
 
 use db::{create_watched_members_table, create_guilds_table};
 #[tokio::main]
