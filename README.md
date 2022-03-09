@@ -12,4 +12,3 @@ Chains primarily focuses on easy to set up, easy to use moderation tools such as
 - [ ] Put a user on watch to log certain actions
 - [ ] Reports and warn with reason tools
 - [ ] Configuring punishments for an nth warn
-
