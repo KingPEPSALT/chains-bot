@@ -9,14 +9,18 @@ tracing-subscriber = "0.2"
 dotenv = "0.15.0"
 fallible-iterator ="0.2.0"
 
-[dependencies.rusqlite]
-version = "0.27.0"
-features = ["bundled"]
+# [dependencies.rusqlite]
+# version = "0.27.0"
+# features = ["bundled"]
 
 [dependencies.tokio]
 version = "1.0"
-features = ["macros", "signal", "rt-multi-thread"]
+features = ["macros", "signal", "rt-multi-thread", "full"]
 
 [dependencies.serenity]
 features = ["cache", "framework", "standard_framework", "rustls_backend", "collector"]
 version = "0.10.10"
+
+[dependencies.sea-orm]
+features = ["sqlx-sqlite", "runtime-tokio", "macros", "runtime-tokio-rustls"]
+version = "^0.6"
