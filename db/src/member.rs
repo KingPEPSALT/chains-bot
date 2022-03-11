@@ -15,8 +15,8 @@ pub struct Model{
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::guild::Entity",
-        from = "Column::guildId",
-        to = "super::guild::Column::guildId"
+        from = "Column::GuildId",
+        to = "super::guild::Column::GuildId"
     )]
     Guild,
     #[sea_orm(has_many = "super::member::Entity")]

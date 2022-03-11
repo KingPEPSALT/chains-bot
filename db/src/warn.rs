@@ -15,8 +15,8 @@ pub struct Model{
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::member::Entity",
-        from = "Column::memberId",
-        to = "super::member::Column::memberId"
+        from = "Column::MemberId",
+        to = "super::member::Column::MemberId"
     )]
     Member
 }

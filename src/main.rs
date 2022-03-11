@@ -112,7 +112,7 @@ use tokio;
 
 #[tokio::main]
 async fn main() -> Result<(), DbErr> {
-    let mut opt = ConnectOptions::new("sqlite:../db.sqlite".to_owned());
+    let mut opt = ConnectOptions::new("sqlite:./db.sqlite".to_owned());
     opt
         .max_connections(100)
         .min_connections(5)
