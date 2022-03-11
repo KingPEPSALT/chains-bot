@@ -17,8 +17,7 @@ pub enum Relation{
     Member,
     #[sea_orm(has_many = "super::channel::Entity")]
     Channel,
-    #[sea_orm(has_many = "super::warn::Entity")]
-    Warn
+
 }
 
 impl Related<super::member::Entity> for Entity {
@@ -31,10 +30,6 @@ impl Related<super::channel::Entity> for Entity {
         Relation::Channel.def()
     }
 }
-impl Related<super::warn::Entity> for Entity {
-    fn to() -> RelationDef {
-        Relation::Warn.def()
-    }
-}
+
 
 impl ActiveModelBehavior for ActiveModel {}

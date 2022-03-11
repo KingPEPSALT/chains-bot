@@ -19,7 +19,8 @@ pub enum Relation {
         to = "super::guild::Column::GuildId"
     )]
     Guild,
-    #[sea_orm(has_many = "super::member::Entity")]
+
+    #[sea_orm(has_many = "super::warn::Entity")]
     Warn
 }
 impl Related<super::guild::Entity> for Entity {
