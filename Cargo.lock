@@ -349,6 +349,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "chains_bot"
 version = "0.1.0"
 dependencies = [
+ "db",
  "dotenv",
  "fallible-iterator",
  "serenity",
@@ -1012,6 +1013,7 @@ checksum = "308cc39be01b73d0d18f82a0e7b2a3df85245f84af96fdddc5d202d27e47b86a"
 name = "migration"
 version = "0.1.0"
 dependencies = [
+ "db",
  "sea-schema",
 ]
 

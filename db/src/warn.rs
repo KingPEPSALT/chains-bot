@@ -4,10 +4,10 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "Warns")]
 pub struct Model{
     #[sea_orm(primary_key)]
-    pub warnId: i32,
-    pub memberId: i32,
+    pub warn_id: i32,
+    pub member_id: i32,
     pub reason: Option<String>,
-    pub byUserId: i32,
+    pub by_user_id: i32,
 }
 
 

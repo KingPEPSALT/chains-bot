@@ -3,6 +3,7 @@ pub mod channel;
 pub mod guild;
 pub mod member;
 pub mod warn;
+pub use sea_orm;
 
 #[cfg(test)]
 mod tests {
@@ -12,5 +13,3 @@ mod tests {
         assert_eq!(result, 4);
     }
 }
-
-pub use sea_orm;

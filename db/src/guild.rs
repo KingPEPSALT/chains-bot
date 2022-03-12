@@ -4,11 +4,11 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "Guilds")]
 pub struct Model{
     #[sea_orm(primary_key)]
-    pub guildId: i32,
-    pub isCompliant: i32,
-    pub snapChannelId: Option<i32>,
-    pub warnChannelId: Option<i32>,
-    pub moderationRoleId: Option<i32>
+    pub guild_id: i32,
+    pub is_compliant: i32,
+    pub snap_channel_id: Option<i32>,
+    pub warn_channel_id: Option<i32>,
+    pub moderation_role_id: Option<i32>
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

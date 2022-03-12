@@ -105,22 +105,26 @@
 
 // }
 
-use std::time::Duration;
-use sea_orm::{ DatabaseConnection, Database, ConnectOptions, DbErr};
-use serenity::Error;
-use tokio;
+// use std::time::Duration;
 
-#[tokio::main]
-async fn main() -> Result<(), DbErr> {
-    let mut opt = ConnectOptions::new("sqlite:./db.sqlite".to_owned());
-    opt
-        .max_connections(100)
-        .min_connections(5)
-        .connect_timeout(Duration::from_secs(8))
-        .idle_timeout(Duration::from_secs(8))
-        .max_lifetime(Duration::from_secs(8))
-        .sqlx_logging(true);
+// use db::sea_orm{ DatabaseConnection, Database, ConnectOptions, DbErr};
+// use db::sea_orm;
+// use serenity::Error;
+// use tokio;
+// use db::sea_orm::{Database, ConnectOptions, DbErr};
+// #[tokio::main]
+/*async*/ fn main() /* -> Result<(), DbErr> */ {
+    // let mut opt = ConnectOptions::new("sqlite:./db.sqlite".to_owned());
+    // opt
+    //     .max_connections(100)
+    //     .min_connections(5)
+    //     .connect_timeout(Duration::from_secs(8))
+    //     .idle_timeout(Duration::from_secs(8))
+    //     .max_lifetime(Duration::from_secs(8))
+    //     .sqlx_logging(true);
 
-    let db =  Database::connect(opt).await?;
-    Ok(())
+    // let db =  Database::connect(opt).await?;
+    // db.as_mock_connection();
+    // db::guild::Column::GuildId
+    // Ok(())
 }

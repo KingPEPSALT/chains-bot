@@ -4,9 +4,9 @@ use sea_orm::entity::prelude::*;
 #[sea_orm(table_name = "Channels")]
 pub struct Model{
     #[sea_orm(primary_key)]
-    pub channelId: i32,
-    pub guildId: i32,
-    pub mirrorToChannelId: Option<i32>
+    pub channel_id: i32,
+    pub guild_id: i32,
+    pub mirror_to_channel_id: Option<i32>
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
