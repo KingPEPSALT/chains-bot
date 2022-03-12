@@ -111,7 +111,8 @@
 // use serenity::Error;
 use tokio;
 use std::time::Duration;
-use db::sea_orm::{Database, ConnectOptions, DbErr, Set, ActiveModelTrait, EntityTrait};
+use db::sea_orm::{Database, ConnectOptions, DbErr, Set, ActiveModelTrait, EntityTrait, DatabaseConnection, QueryOrder};
+use db::*;
 #[tokio::main]
 async fn main()  -> Result<(), DbErr> {
     let mut opt = ConnectOptions::new("sqlite:./chains.sqlite".to_owned());
@@ -124,6 +125,12 @@ async fn main()  -> Result<(), DbErr> {
         .sqlx_logging(true);
 
     let db =  Database::connect(opt).await?;
+
+    for guild in dummy_recs(&db).await? {
+        let i: db::guild::Model = guild.insert(&db).await?;
+    } 
+
+
     // let guild = db::guild::ActiveModel {
     //     guild_id: Set(4.to_owned()),
     //     snap_channel_id: Set(None),
@@ -133,9 +140,27 @@ async fn main()  -> Result<(), DbErr> {
     // };
 
     // let guild: db::guild::Model = guild.insert(&db).await?;
-    let guilds: Vec<db::guild::Model> = db::guild::Entity::find().all(&db).await?;
+
+    let guilds: Vec<guild::Model> = db::guild::Entity::find().all(&db).await?;
     for g in guilds {
         println!("{}",g.guild_id)
     }
     Ok(())
+}
+
+async fn dummy_recs(db: &DatabaseConnection) -> Result<Vec<guild::ActiveModel>, DbErr> {
+    let mut x = Vec::new();
+    let mut i = 0;
+    while i < 499  {
+        let guild = db::guild::ActiveModel {
+                guild_id: Set(i),
+                snap_channel_id: Set(None),
+                is_compliant: Set(true.to_owned()),
+                warn_channel_id: Set(None),
+                moderation_role_id: Set(None) 
+            };
+        x.push(guild);
+        i = i+1;
+    }
+    Ok(x)
 }
