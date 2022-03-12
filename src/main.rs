@@ -105,26 +105,33 @@
 
 // }
 
-// use std::time::Duration;
+use std::time::Duration;
 
-// use db::sea_orm{ DatabaseConnection, Database, ConnectOptions, DbErr};
+// use db::sea_orm { DatabaseConnection, Database, ConnectOptions, DbErr };
 // use db::sea_orm;
 // use serenity::Error;
-// use tokio;
-// use db::sea_orm::{Database, ConnectOptions, DbErr};
-// #[tokio::main]
-/*async*/ fn main() /* -> Result<(), DbErr> */ {
-    // let mut opt = ConnectOptions::new("sqlite:./db.sqlite".to_owned());
-    // opt
-    //     .max_connections(100)
-    //     .min_connections(5)
-    //     .connect_timeout(Duration::from_secs(8))
-    //     .idle_timeout(Duration::from_secs(8))
-    //     .max_lifetime(Duration::from_secs(8))
-    //     .sqlx_logging(true);
+use tokio;
+use db::sea_orm::{Database, ConnectOptions, DbErr, Set, ActiveModelTrait};
+#[tokio::main]
+async fn main()  -> Result<(), DbErr> {
+    let mut opt = ConnectOptions::new("sqlite:./chains.db".to_owned());
+    opt
+        .max_connections(100)
+        .min_connections(5)
+        .connect_timeout(Duration::from_secs(8))
+        .idle_timeout(Duration::from_secs(8))
+        .max_lifetime(Duration::from_secs(8))
+        .sqlx_logging(true);
 
-    // let db =  Database::connect(opt).await?;
-    // db.as_mock_connection();
-    // db::guild::Column::GuildId
-    // Ok(())
+    let db =  Database::connect(opt).await?;
+    let guild = db::guild::ActiveModel {
+        guild_id: Set(3.to_owned()),
+        snap_channel_id: Set(Some(4)),
+        is_compliant: Set(true.to_owned()),
+        warn_channel_id: Set(Some(1)),
+        moderation_role_id: Set(Some(8))
+    };
+
+    let guild: db::guild::Model = guild.insert(&db).await?;
+    Ok(())
 }
