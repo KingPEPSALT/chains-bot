@@ -2,5 +2,7 @@
 */target
 *.db
 *.sqlite
+*.sqlite-shm
+*.sqlite-wal
 .env
 launch.json
