@@ -110,8 +110,9 @@
 // use db::sea_orm;
 // use serenity::Error;
 use tokio;
+use tokio::time::Instant;
 use std::time::Duration;
-use db::sea_orm::{Database, ConnectOptions, DbErr, Set, ActiveModelTrait, EntityTrait, DatabaseConnection, QueryOrder};
+use db::sea_orm::{Database, ConnectOptions, DbErr, Set, EntityTrait, DatabaseConnection};
 use db::*;
 #[tokio::main]
 async fn main()  -> Result<(), DbErr> {
@@ -124,38 +125,34 @@ async fn main()  -> Result<(), DbErr> {
         .max_lifetime(Duration::from_secs(8))
         .sqlx_logging(true);
 
+    let now = Instant::now();
     let db =  Database::connect(opt).await?;
+    let finished_connect = now.elapsed();
 
-    for guild in dummy_recs(&db).await? {
-        let i: db::guild::Model = guild.insert(&db).await?;
-    } 
-
-
-    // let guild = db::guild::ActiveModel {
-    //     guild_id: Set(4.to_owned()),
-    //     snap_channel_id: Set(None),
-    //     is_compliant: Set(true.to_owned()),
-    //     warn_channel_id: Set(None),
-    //     moderation_role_id: Set(None)
-    // };
-
-    // let guild: db::guild::Model = guild.insert(&db).await?;
+    let vec = dummy_recs(&db).await?;
+    let res = db::guild::Entity::insert_many(vec).exec(&db).await?;
+    let finished_insert = now.elapsed() - finished_connect;
 
     let guilds: Vec<guild::Model> = db::guild::Entity::find().all(&db).await?;
-    for g in guilds {
-        println!("{}",g.guild_id)
+    let finished_read = now.elapsed() - finished_insert - finished_connect;
+    for guild in guilds{
+        print!("{} ", guild.guild_id);
     }
+    println!("\nConnection to database took: {:?}", finished_connect);
+    println!("Insert of {} records took: {:?}", res.last_insert_id+1, finished_insert);
+    println!("Read of {} records took: {:?}", res.last_insert_id+1, finished_read);
+
     Ok(())
 }
 
-async fn dummy_recs(db: &DatabaseConnection) -> Result<Vec<guild::ActiveModel>, DbErr> {
+async fn dummy_recs(_: &DatabaseConnection) -> Result<Vec<guild::ActiveModel>, DbErr> {
     let mut x = Vec::new();
     let mut i = 0;
-    while i < 499  {
+    while i < 500  {
         let guild = db::guild::ActiveModel {
                 guild_id: Set(i),
                 snap_channel_id: Set(None),
-                is_compliant: Set(true.to_owned()),
+                is_compliant: Set(true),
                 warn_channel_id: Set(None),
                 moderation_role_id: Set(None) 
             };

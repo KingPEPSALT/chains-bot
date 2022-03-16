@@ -1,9 +1,11 @@
 
-use db::guild::*;
-use db::*;
+use db::{
+    guild::*,
+    *
+};
 
 use sea_schema::migration::{
-    sea_query::{self, *},
+    sea_query::*,
     *,
 };
 

@@ -1,8 +1,10 @@
-use db::channel::*;
-use db::*;
+use db::{
+    channel::*,
+    *
+};
 
 use sea_schema::migration::{
-    sea_query::{self, *},
+    sea_query::*,
     *,
 };
 
@@ -10,7 +12,7 @@ pub struct Migration;
 
 impl MigrationName for Migration {
     fn name(&self) -> &str {
-        "m20220101_000001_create_channel_table"
+        "m20220101_000002_create_channel_table"
     }
 }
 
@@ -25,9 +27,18 @@ impl MigrationTrait for Migration {
                 .not_null()
                 .primary_key())
             .col(ColumnDef::new(Column::GuildId)
-                .not_null()
-            )
-        .to_owned()).await
+                .integer()
+                .not_null())
+                .foreign_key(
+                    ForeignKey::create()
+                        .name("FK_Guild_Id")
+                        .from(Entity, Column::GuildId)
+                        .to(guild::Entity, guild::Column::GuildId)
+                )
+            .col(ColumnDef::new(Column::MirrorToChannelId)
+                .integer())
+        .to_owned()
+        ).await
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
