@@ -7,7 +7,7 @@ pub struct Model{
     pub warn_id: u32,
     pub guild_id: i64,
     pub user_id: i64,
-    pub reason: Option<i64>,
+    pub reason: Option<String>,
     pub by_user_id: String,
 }
 
