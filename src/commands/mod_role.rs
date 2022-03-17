@@ -20,8 +20,9 @@ async fn mod_role(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
     let role_id = match args.single::<u64>() {
         Ok(t) => t,
         Err(_) => {
-            if msg.mentions.len() == 0{
-                msg.reply(ctx, "You did not provide a sufficient ID or mention a user.").await?;
+            if msg.mention_roles.len() == 0{
+                msg.reply(ctx, "You did not supply a sufficient role ID or mention a role.").await?;
+                return Ok(())
             }
             *msg.mention_roles[0].as_u64()
         }

@@ -4,19 +4,24 @@ use serenity::{
     prelude::Context
 };
 use std::{mem::swap, collections::HashMap};
-use crate::{commands::enforce_compliancy};
+use crate::commands::{enforce_compliancy, is_moderator};
 #[command] 
 #[min_args(1)]
 #[max_args(2)]
 #[aliases(log_messages, log, snap, snap_messages, snapshot_messages, snip)]
 async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     
+    if !is_moderator(ctx, msg).await{
+        msg.reply(ctx, "You must be a moderator to run this command.").await?;
+        return Ok(())
+    }
+
     // get the guild id and cast to i64 so it can be used with the database
     let guild = *msg.guild_id.unwrap().as_u64();
 
     // check that the guild is compliant with the bot disclaimer
     // see mod.rs for enforce_compliancy
-    let (compliant, possible_request) = enforce_compliancy(ctx, msg, guild as i64).await;
+    let (compliant, possible_request) = enforce_compliancy(ctx, msg).await;
     if !compliant || possible_request.is_none(){
         return Ok(())
     };

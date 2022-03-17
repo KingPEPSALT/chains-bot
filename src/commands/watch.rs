@@ -6,16 +6,22 @@ use serenity::{
     prelude::Context
 };
 use super::enforce_compliancy;
-use crate::{MemberCache, Connection, commands::parse_channel};
+use crate::{MemberCache, Connection, commands::{parse_channel, is_moderator}};
 
 #[command] 
 #[min_args(1)]
 #[max_args(2)]
 #[aliases(monitor)]
 async fn watch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
+    if !is_moderator(ctx, msg).await{
+        msg.reply(ctx, "You must be a moderator to run this command").await?;
+        return Ok(())
+    }
+
+
     let guild_id = *msg.guild_id.unwrap().as_u64() as i64;
 
-    if !enforce_compliancy(ctx, msg, guild_id).await.0{
+    if !enforce_compliancy(ctx, msg).await.0{
         return Ok(())
     }
 
@@ -30,6 +36,7 @@ async fn watch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
         }
     } as i64;
 
+    // get the database connection
     let mut data = ctx.data.write().await;
     let con = data.get::<Connection>().unwrap();
 

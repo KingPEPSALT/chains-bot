@@ -12,8 +12,8 @@ pub mod mod_role;
 pub mod disclaimer;
 pub mod watch;
 
-pub async fn enforce_compliancy(ctx: &Context, msg: &Message, guild: i64) -> (bool, Option<db::guild::Model>){
-    let request = match db::guild::Entity::find_by_id(guild as i64)
+pub async fn enforce_compliancy(ctx: &Context, msg: &Message) -> (bool, Option<db::guild::Model>){
+    let request = match db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64)
         .one(ctx.data.read().await.get::<Connection>()
         .expect("Connection to database does not exist.")).await
     {
@@ -34,6 +34,25 @@ pub async fn enforce_compliancy(ctx: &Context, msg: &Message, guild: i64) -> (bo
         return (false, Some(request));
     }
     (true, Some(request))
+}
+
+pub async fn is_moderator(ctx: &Context, msg: &Message) -> bool{
+
+    let member =  msg.member(ctx).await.unwrap();
+    
+    let role_id = db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64)
+        .one(ctx.data.read().await.get::<Connection>()
+        .expect("Connection to database does not exist.")).await.unwrap().unwrap().moderation_role_id;
+
+    if member.permissions(ctx).await.unwrap().administrator(){
+        return true;
+    }
+    if role_id.is_none(){
+        return false
+    }
+        
+    member.roles(ctx).await
+        .expect("Expected role list").iter().find(|&r| *r.id.as_u64() as i64 == role_id.unwrap()).is_some()
 }
 
 pub fn parse_channel(channel_mention: String) -> Result<i64, ParseIntError>{
