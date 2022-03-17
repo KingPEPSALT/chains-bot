@@ -36,13 +36,21 @@ pub async fn enforce_compliancy(ctx: &Context, msg: &Message) -> (bool, Option<d
     (true, Some(request))
 }
 
-pub async fn is_moderator(ctx: &Context, msg: &Message) -> bool{
+pub async fn is_moderator(ctx: &Context, msg: &Message) -> bool {
 
     let member =  msg.member(ctx).await.unwrap();
     
-    let role_id = db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64)
+    let role_id = match db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64)
         .one(ctx.data.read().await.get::<Connection>()
-        .expect("Connection to database does not exist.")).await.unwrap().unwrap().moderation_role_id;
+        .expect("Connection to database does not exist.")).await {
+            Ok(Some(x)) => x.moderation_role_id,
+            Ok(None) => {
+                return false;
+            },
+            Err(_) => {
+                return false;
+            }
+        };
 
     if member.permissions(ctx).await.unwrap().administrator(){
         return true;
