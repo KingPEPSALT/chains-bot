@@ -1,8 +1,7 @@
 /target
 */target
 *.db
-*.sqlite
-*.sqlite-shm
-*.sqlite-wal
+*.db-shm
+*.db-wal
 .env
 launch.json

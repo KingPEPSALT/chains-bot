@@ -1,12 +1,10 @@
-use db::{
-    member::*,
-    *
+use db::{sea_orm::{Database, Schema, ConnectionTrait}
 };
 use sea_schema::migration::{
     sea_query::*,
     *,
 };
-
+use std::env;
 pub struct Migration;
 
 impl MigrationName for Migration {
@@ -18,35 +16,16 @@ impl MigrationName for Migration {
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager.create_table(Table::create()
-            .table(member::Entity)
-            .if_not_exists()
-            .col(ColumnDef::new(member::Column::MemberId)
-                .integer()
-                .not_null()
-                .primary_key()
-                .auto_increment())
-            .col(ColumnDef::new(member::Column::GuildId)
-                .integer()
-                .not_null())
-                .foreign_key(
-                    ForeignKey::create()
-                        .name("FK_Guild_Id")
-                        .from(Entity, Column::GuildId)
-                        .to(guild::Entity, guild::Column::GuildId)
-                )
-            .col(ColumnDef::new(Column::UserId)
-                .integer()
-                .not_null())
-            .col(ColumnDef::new(Column::WatchChannelId)
-                .integer())
-            .to_owned()
-            ).await?;
+        let con = Database::connect(env::var("DATABASE_URL").unwrap()).await?;
+        let builder = con.get_database_backend();
+        manager.create_table(
+            Schema::new(builder).create_table_from_entity(db::member::Entity)
+        ).await?;
         Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager.drop_table(Table::drop().table(member::Entity).to_owned())
+        manager.drop_table(Table::drop().table(db::member::Entity).to_owned())
         .await
     }
 }

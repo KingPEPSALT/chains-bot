@@ -1,4 +1,5 @@
-use crate::{db::update_snapshot_channel, commands::parse_channel};
+use crate::{commands::parse_channel, Connection};
+use db::sea_orm::{EntityTrait, Set, ActiveModelTrait};
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::channel::Message,
@@ -18,11 +19,14 @@ async fn snapshot_channel(ctx: &Context, msg: &Message, mut args: Args) -> Comma
         Ok(id) => id,
         Err(_) => {
             msg.reply(ctx, "That is not a valid channel ID or channel mention.").await?;
-            return Ok(())
+            return Ok(());
         }
-    };
-
-    match update_snapshot_channel(&msg.guild_id.unwrap().as_u64(), &channel_id) {
+    } as i64;
+    let data = ctx.data.read().await;
+    let con = data.get::<Connection>().unwrap();
+    let mut guild : db::guild::ActiveModel = db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64).one(con).await?.unwrap().into();
+    guild.snap_channel_id = Set(Some(channel_id));
+    match guild.update(con).await {
         Ok(_) => msg.reply(ctx, format!("Successfully set channel to `<#{}>`", channel_id)).await?,
         Err(_) => msg.reply(ctx, "Could not set the snapshot channel, this is a fault with my code.").await?
     };

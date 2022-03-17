@@ -1,7 +1,8 @@
+use std::env;
 
 use db::{
     guild::*,
-    *
+    sea_orm::{Schema, Database, ConnectionTrait}
 };
 
 use sea_schema::migration::{
@@ -21,25 +22,12 @@ impl MigrationName for Migration {
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager.create_table(Table::create()
-            .table(Entity)
-            .if_not_exists()
-            .col(ColumnDef::new(Column::GuildId)
-                .integer()
-                .not_null()
-                .primary_key())
-            .col(ColumnDef::new(Column::IsCompliant).boolean().not_null())
-            .col(ColumnDef::new(Column::ModerationRoleId).integer())
-            .col(ColumnDef::new(Column::SnapChannelId).integer())
-            .col(ColumnDef::new(Column::WarnChannelId).integer())
-            .foreign_key(
-                ForeignKey::create()
-                .name("FK_Snap_Channel_Id")
-                .from(Entity, Column::SnapChannelId)
-                .to(channel::Entity, channel::Column::ChannelId)
-            )
-        .to_owned()
-        ).await
+        let con = Database::connect(env::var("DATABASE_URL").unwrap()).await?;
+        let builder = con.get_database_backend();
+        manager.create_table(
+            Schema::new(builder).create_table_from_entity(db::guild::Entity)
+        ).await?;
+        Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {

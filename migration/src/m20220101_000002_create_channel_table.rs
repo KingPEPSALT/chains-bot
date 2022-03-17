@@ -1,6 +1,8 @@
+use std::env;
+
 use db::{
     channel::*,
-    *
+    sea_orm::{Database, Schema, ConnectionTrait}
 };
 
 use sea_schema::migration::{
@@ -19,26 +21,12 @@ impl MigrationName for Migration {
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        manager.create_table(Table::create()
-            .table(Entity)
-            .if_not_exists()
-            .col(ColumnDef::new(Column::ChannelId)
-                .integer()
-                .not_null()
-                .primary_key())
-            .col(ColumnDef::new(Column::GuildId)
-                .integer()
-                .not_null())
-                .foreign_key(
-                    ForeignKey::create()
-                        .name("FK_Guild_Id")
-                        .from(Entity, Column::GuildId)
-                        .to(guild::Entity, guild::Column::GuildId)
-                )
-            .col(ColumnDef::new(Column::MirrorToChannelId)
-                .integer())
-        .to_owned()
-        ).await
+        let con = Database::connect(env::var("DATABASE_URL").unwrap()).await?;
+        let builder = con.get_database_backend();
+        manager.create_table(
+            Schema::new(builder).create_table_from_entity(db::channel::Entity)
+        ).await?;
+        Ok(())
     }
 
     async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {

@@ -1,3 +1,4 @@
+use db::sea_orm::{EntityTrait, Set, ActiveModelTrait};
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::channel::Message,
@@ -5,7 +6,7 @@ use serenity::{
     futures::StreamExt, utils::Colour
 };
 
-use crate::db::{get_guild, update_compliancy};
+use crate::Connection;
 
 const DISSEMINATION: &str = "The use of the snapshot command requires logging of information which must be disseminated to clients of this bot and of which they must agree to. Chain will not locally but, instead, within the guild, log this information from the member: usernames, discriminators, client IDs and messages sent within this server. It will send this data in bytes that will form a file at some designated channel; this file is never stored anywhere but within the server. It will not do anything more with the information gathered and to repeat, it will not store it locally.";
 
@@ -13,11 +14,16 @@ const DISSEMINATION: &str = "The use of the snapshot command requires logging of
 #[num_args(0)]
 #[aliases(dissemination)]
 async fn disclaimer(ctx: &Context, msg: &Message, _: Args) -> CommandResult{
-    let _guild_info = match get_guild(msg.guild_id.unwrap().as_u64()) 
+
+    let guild_id = *msg.guild_id.unwrap().as_u64();
+    let data = ctx.data.read().await;
+    let con = data.get::<Connection>().unwrap();
+
+    let mut guild: db::guild::ActiveModel = match db::guild::Entity::find_by_id(guild_id as i64).one(con).await
     {
-        Ok(g) => g,
-        Err(e) => {
-            msg.reply(ctx, format!("Could not get guild from database | {} | This is an error within the code.", e.to_string())).await?;
+        Ok(Some(g)) => g.into(),
+        _ => {
+            msg.reply(ctx, "Could not get guild from database | This is an error within the code.").await?;
             return Ok(());
         },
     };
@@ -43,7 +49,8 @@ async fn disclaimer(ctx: &Context, msg: &Message, _: Args) -> CommandResult{
             .author_id(msg.author.id).await;
 
         if let Some(e) = react_collector.next().await{
-            update_compliancy(&msg.guild_id.unwrap().as_u64(), e.as_inner_ref().emoji.as_data().as_str()=="🟢")?;
+            guild.is_compliant = Set(e.as_inner_ref().emoji.as_data().as_str()=="🟢");
+            guild.update(con).await?;
         }
         disclaimer.delete(ctx).await?;
         msg.delete(ctx).await?;

@@ -11,13 +11,13 @@ use crate::{commands::enforce_compliancy};
 #[aliases(log_messages, log, snap, snap_messages, snapshot_messages, snip)]
 async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     
-    let guild = *msg.guild_id.unwrap().as_u64();
+    let guild = *msg.guild_id.unwrap().as_u64() as i64;
     let (compliant, is_request) = enforce_compliancy(ctx, msg, guild).await;
     if !compliant || is_request.is_none(){
         return Ok(())
     };
     let request = is_request.unwrap();
-    let _channel_id = match request.snapshot_channel
+    let channel_id = match request.snap_channel_id
     { 
         Some(id) => id,
         None => {
@@ -84,8 +84,7 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
         message.attachments.iter().for_each(|a| attachments += &format!("[ATTACHMENT: {}]\n", a.url));
 
         if !nickname_map.contains_key(&message.author.id){
-            let nickname_monad = message.author.nick_in(&ctx.http, request.guild_id).await;
-            let nickname = match nickname_monad {
+            let nickname = match message.author.nick_in(&ctx.http, request.guild_id as u64).await {
                 Some(t) => format!("({})", t),
                 None => "".into()
             };
@@ -110,7 +109,7 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
 
     };
 
-    let requester_tag = msg.author.nick_in(ctx, guild).await.unwrap_or(" ".to_string());
+    let requester_tag = msg.author.nick_in(ctx, guild  as u64).await.unwrap_or(" ".to_string());
     snapshot_file = format!(
         "SNAPSHOT [REQUESTOR: {}({})#{} ({})] [{} MESSAGES]\n\n{}", 
         msg.author.name, 
@@ -121,7 +120,7 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
         snapshot_file
     );
 
-    if let Err(e) = ChannelId::from(_channel_id)
+    if let Err(e) = ChannelId::from(channel_id as u64)
         .send_files(
             &ctx.http, 
             vec![(snapshot_file.as_bytes(), "log_file.txt")],

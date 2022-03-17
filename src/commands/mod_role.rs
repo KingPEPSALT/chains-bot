@@ -1,4 +1,5 @@
-use crate::db::update_mod_role;
+use crate::Connection;
+use db::sea_orm::{EntityTrait, Set, ActiveModelTrait};
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::channel::Message,
@@ -24,8 +25,13 @@ async fn mod_role(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult
             }
             *msg.mention_roles[0].as_u64()
         }
-    };
-    match update_mod_role(&msg.guild_id.unwrap().as_u64(), &role_id) {
+    } as i64;
+    let data = ctx.data.read().await;
+    let con = data.get::<Connection>().unwrap();
+    let mut guild : db::guild::ActiveModel = db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64).one(con).await?.unwrap().into();
+    guild.moderation_role_id = Set(Some(role_id));
+    
+    match guild.update(con).await {
         Ok(_) => msg.reply(ctx, format!("Successfully set moderation role to `<@&{}>`", role_id)).await?,
         Err(_) => msg.reply(ctx, "Could not set the moderation role, this is a fault with my code.").await?
     };

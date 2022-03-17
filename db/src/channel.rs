@@ -3,10 +3,10 @@ use sea_orm::entity::prelude::*;
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel)]
 #[sea_orm(table_name = "Channels")]
 pub struct Model{
-    #[sea_orm(primary_key)]
-    pub channel_id: i32,
-    pub guild_id: i32,
-    pub mirror_to_channel_id: Option<i32>
+    #[sea_orm(primary_key, auto_increment=false)]
+    pub channel_id: i64,
+    pub guild_id: i64,
+    pub mirror_to_channel_id: Option<i64>
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
