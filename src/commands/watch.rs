@@ -21,7 +21,7 @@ async fn watch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
 
     let guild_id = *msg.guild_id.unwrap().as_u64() as i64;
 
-    if !enforce_compliancy(ctx, msg).await.0{
+    if !enforce_compliancy(ctx, msg).await.unwrap().is_compliant{
         return Ok(())
     }
 

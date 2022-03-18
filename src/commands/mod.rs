@@ -12,7 +12,7 @@ pub mod mod_role;
 pub mod disclaimer;
 pub mod watch;
 
-pub async fn enforce_compliancy(ctx: &Context, msg: &Message) -> (bool, Option<db::guild::Model>){
+pub async fn enforce_compliancy(ctx: &Context, msg: &Message) -> Option<db::guild::Model>{
     let request = match db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64)
         .one(ctx.data.read().await.get::<Connection>()
         .expect("Connection to database does not exist.")).await
@@ -20,26 +20,26 @@ pub async fn enforce_compliancy(ctx: &Context, msg: &Message) -> (bool, Option<d
         Ok(Some(guild_model)) => guild_model,
         Ok(None) => {
             msg.reply(ctx, "Could not get guild from database | This is an error within the code.").await.expect("Could not enforce disclaimer.");
-            return (false, None);
+            return None;
         }
         Err(e) => {
             msg.reply(ctx, format!("Could not get guild from database | {} | This is an error within the code.", e.to_string())).await.expect("Could not enforce disclaimer.");
-            return (false, None);
+            return None;
         },
     };
     
     if ! request.is_compliant {
 
         msg.reply(ctx, format!("A server admin must accept the `{}disclaimer`", dotenv::var("DISCORD_PREFIX").unwrap())).await.expect("Could not enforce disclaimer.");
-        return (false, Some(request));
+        return Some(request);
     }
-    (true, Some(request))
+    Some(request)
 }
 
 pub async fn is_moderator(ctx: &Context, msg: &Message) -> bool{
 
     let member =  msg.member(ctx).await.unwrap();
-    
+
     let role_id = db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64)
         .one(ctx.data.read().await.get::<Connection>()
         .expect("Connection to database does not exist.")).await.unwrap().unwrap().moderation_role_id;
