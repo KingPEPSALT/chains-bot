@@ -28,7 +28,7 @@
     - [x] Channel configuration
         - [x] Persistent storage of configuration.
         - [ ] Allow more configurable channels
-            - [ ] Different channels for different **Watch**ed users
+            - [x] Different channels for different **Watch**ed users
             - [ ] Different channels for different **Trigger**s
             - [ ] Allow to specify channels on **Snapshot**
     - [x] Argument parsing
