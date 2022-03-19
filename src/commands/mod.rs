@@ -6,6 +6,7 @@ pub mod snapshot_channel;
 pub mod mod_role;
 pub mod disclaimer;
 pub mod watch;
+pub mod mirror;
 
 pub fn parse_channel(channel_mention: String) -> Result<i64, ParseIntError>{
     match channel_mention.parse::<i64>() {

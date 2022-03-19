@@ -13,7 +13,7 @@ use std::{sync::Arc, collections::{HashSet, HashMap}};
 use std::time::Duration;
 use db::sea_orm::{ConnectOptions, DbErr, Set, Database, EntityTrait, DbConn};
 use db::*;
-use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*, watch::*};
+use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*, watch::*, mirror::*};
 
 use serenity::{
     framework::{standard::macros::group, StandardFramework},
@@ -33,6 +33,12 @@ pub struct MemberCache;
 impl TypeMapKey for MemberCache{
     type Value = HashMap<(i64, i64), Option<i64>>;
 }
+
+pub struct MirrorChannelCache;
+impl TypeMapKey for MirrorChannelCache {
+    type Value = HashMap<i64, i64>;
+}
+
 pub struct ShardManagerContainer;
 
 impl TypeMapKey for ShardManagerContainer{
@@ -40,7 +46,7 @@ impl TypeMapKey for ShardManagerContainer{
 }
 
 #[group]
-#[commands(ping, snapshot, snapshot_channel, mod_role, disclaimer, watch)]
+#[commands(ping, snapshot, snapshot_channel, mod_role, disclaimer, watch, mirror)]
 struct General;
 
 
@@ -76,14 +82,21 @@ async fn main() -> Result<(), DbErr> {
             .configure(|c| c.owners(owners).prefix(dotenv::var("DISCORD_PREFIX").unwrap()))
             .group(&GENERAL_GROUP);
     let mut watched_members: HashMap<(i64, i64), Option<i64>> = HashMap::new();
+    let mut mirrored_channels: HashMap<i64, i64> = HashMap::new();
     for member in db::member::Entity::find().all(&con).await?{
         watched_members.insert((member.guild_id, member.user_id), member.watch_channel_id);
     };
+    for channel in db::channel::Entity::find().all(&con).await? {
+        if channel.mirror_to_channel_id.is_some() {
+            mirrored_channels.insert(channel.channel_id, channel.mirror_to_channel_id.unwrap());
+        }
+    }
 
     let mut client =
         Client::builder(&token)
             .framework(framework)
             .type_map_insert::<MemberCache>(watched_members)
+            .type_map_insert::<MirrorChannelCache>(mirrored_channels)
             .type_map_insert::<Connection>(con)
             .event_handler(Handler)
             .await

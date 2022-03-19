@@ -12,6 +12,7 @@ use serenity::{
 };
 use crate::events::Handler;
 use crate::MemberCache;
+use crate::MirrorChannelCache;
 
 impl Handler {
     pub async fn handle_message(&self, ctx: Context, msg: Message){
@@ -19,6 +20,7 @@ impl Handler {
 
         let guild_id = *msg.guild_id.unwrap().as_u64() as i64;
         let author_id = *msg.author.id.as_u64() as i64;
+        let current_channel_id = *msg.channel_id.as_u64() as i64;
 
         if let Some(Some(t)) = data.get::<MemberCache>().expect("No MemberCache HashMap in client data.")
         .get(&(guild_id, author_id)){
@@ -26,7 +28,18 @@ impl Handler {
                 m.embed(|e|{
                     e.colour(Colour::DARK_TEAL)
                     .title(format!("{}#{} ({})",msg.author.name, msg.author.discriminator, author_id))
-                    .description(msg.content)
+                    .description(&msg.content)
+                })
+            }).await.unwrap();
+        }
+
+        if let Some(c_id) = data.get::<MirrorChannelCache>().expect("No Mirror Channel Cache")
+        .get(&current_channel_id) {
+            let channel_name = &ctx.cache.guild_channel(msg.channel_id).await.unwrap().name;
+            ChannelId(*c_id as u64).send_message(&ctx.http, |m| {
+                m.embed(|e| {
+                    e.color(Colour::RED)
+                    .title(format!("{}#{} Origin Chan({})", msg.author.name, msg.author.discriminator, channel_name))
                 })
             }).await.unwrap();
         }

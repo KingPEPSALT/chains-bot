@@ -3,6 +3,7 @@ use serenity::{model::channel::Message, client::Context};
 
 use crate::Connection;
 
+// this effectively consumes errors and will always return true or false
 pub async fn is_message_author_admin(ctx: &Context, msg: &Message) -> bool {
 
     let member =  msg.member(ctx).await.unwrap();
