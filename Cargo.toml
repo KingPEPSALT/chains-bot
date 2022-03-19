@@ -12,14 +12,9 @@ fallible-iterator ="0.2.0"
 [workspace]
 members = [".", "./db", "./migration"]
 
-
-# [dependencies.rusqlite]
-# version = "0.27.0"
-# features = ["bundled"]
-
 [dependencies.tokio]
 version = "1.0"
-features = ["macros", "signal", "rt-multi-thread", "full"]
+features = ["macros", "signal", "rt-multi-thread"]
 
 [dependencies.serenity]
 features = ["cache", "framework", "standard_framework", "rustls_backend", "collector"]

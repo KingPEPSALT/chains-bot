@@ -21,13 +21,18 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
 
     // check that the guild is compliant with the bot disclaimer
     // see mod.rs for enforce_compliancy
-    let (compliant, possible_request) = enforce_compliancy(ctx, msg).await;
-    if !compliant || possible_request.is_none(){
-        return Ok(())
+    let possible_guild = enforce_compliancy(ctx, msg).await;
+    match &possible_guild {
+        Some(guild) => {
+            if ! guild.is_compliant {
+                return Ok(());
+            }
+        },
+        None => return Ok(())
     };
 
     // get the channel to send the snap to from the sea_orm model
-    let channel_id = match possible_request.unwrap().snap_channel_id
+    let channel_id = match possible_guild.unwrap().snap_channel_id
     { 
         Some(id) => id,
         None => {
