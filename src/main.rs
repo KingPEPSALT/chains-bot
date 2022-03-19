@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod events;
+pub mod utilities;
 
 use events::Handler;
 use dotenv;
@@ -79,19 +80,6 @@ async fn main() -> Result<(), DbErr> {
         watched_members.insert((member.guild_id, member.user_id), member.watch_channel_id);
     };
 
-    // println!("\nLooking through WatchChannel cache.");
-    // for (k, v) in &wch{
-    //     println!("{} - {}", k, v);
-    // }
-    // println!("\nLooking through WatchMember cache.");
-    // for (k, v) in &wmem{
-    //     println!("{}", k);
-    //     for i in 0..v.len()-1{
-    //         println!("  ├─ {}", v[i]);
-    //     }
-    //     println!("  └─ {}", v[v.len()-1]);
-    // }
-
     let mut client =
         Client::builder(&token)
             .framework(framework)
@@ -107,31 +95,6 @@ async fn main() -> Result<(), DbErr> {
 
     Ok(())
 }
-
-
-
-
-
-    /* BENCHMARKING CODE*/
-    /*
-    let dummies = _test_entries(5000).await?;
-    
-    let now = Instant::now();
-    let db =  Database::connect(opt).await?;
-    let finished_connect = now.elapsed();
-    
-    let res = db::guild::Entity::insert_many(dummies).exec(&db).await?;
-    let finished_insert = now.elapsed() - finished_connect;
-    
-    let guilds: Vec<guild::Model> = db::guild::Entity::find().all(&db).await?;
-    let finished_read = now.elapsed() - finished_insert - finished_connect;
-    for guild in guilds{
-        print!("{} ", guild.guild_id);
-    }
-    println!("\nConnection to database took: {:?}", finished_connect);
-    println!("Insert of {} records took: {:?}", res.last_insert_id+1, finished_insert);
-    println!("Read of {} records took: {:?}", res.last_insert_id+1, finished_read);
-    */
 
 // Creates n dummy guilds to insert for benchmarking purposes
 async fn _test_entries(n: u64) -> Result<Vec<guild::ActiveModel>, DbErr> {
