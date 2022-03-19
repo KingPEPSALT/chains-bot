@@ -40,6 +40,7 @@ impl Handler {
                 m.embed(|e| {
                     e.color(Colour::RED)
                     .title(format!("{}#{} Origin Chan({})", msg.author.name, msg.author.discriminator, channel_name))
+                    .description(&msg.content)
                 })
             }).await.unwrap();
         }

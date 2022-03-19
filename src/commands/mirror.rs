@@ -42,6 +42,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let arg_array = args.raw().collect::<Vec<&str>>();
     let message_channel_id = &i64::from(msg.channel_id);
+    let message_guild_id = &i64::from(msg.guild_id.unwrap());
     let first_argument = arg_array[0];
     if arg_array.len() == 2 {
         let second_argument = arg_array[1];
@@ -63,6 +64,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                         }
                     },
                     _ => {
+                        //TODO:
                     }
                 }
             }
@@ -74,6 +76,32 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             MirrorArgument::Channel => {
                 let mut data = ctx.data.write().await;
                 let con = data.get::<Connection>().unwrap();
+                match parse_channel(arg_array[0].to_owned()) {
+                    Ok(mirror_channel) => {
+                        match db::channel::Entity::find_by_id(message_channel_id.to_owned()).one(con).await {
+                            Ok(Some(model)) => {
+                                let mut channel: db::channel::ActiveModel = model.into();
+                                channel.mirror_to_channel_id = Set(Some(mirror_channel));
+                            },
+                            Ok(None) => {
+                                db::channel::ActiveModel {
+                                    guild_id: Set(message_guild_id.to_owned()),
+                                    channel_id: Set(message_channel_id.to_owned()),
+                                    mirror_to_channel_id: Set(Some(mirror_channel))
+                                }.insert(con).await
+                                .expect("COULDNT DO IT LMAO WTF HAHAHAHHA");
+                                data.get_mut::<MirrorChannelCache>().unwrap().insert(message_channel_id.to_owned(), mirror_channel);
+                            },
+                            Err(_) => {
+                                // TODO:
+                            }
+                        }
+                    },
+                    Err(_) => {
+                        msg.reply(ctx, "Please supply a channel to mirror into").await?;
+                        return Ok(());  
+                    }
+                }
             }
         }
     }
