@@ -37,11 +37,12 @@ impl Handler {
         .get(&current_channel_id) {
             let channel_name = &ctx.cache.guild_channel(msg.channel_id).await.unwrap().name;
             ChannelId(*c_id as u64).send_message(&ctx.http, |m| {
-                m.embed(|e| {
-                    e.color(Colour::RED)
-                    .title(format!("{}#{} Origin Chan({})", msg.author.name, msg.author.discriminator, channel_name))
-                    .description(&msg.content)
-                })
+                // m.embed(|e| {
+                //     e.color(Colour::RED)
+                //     .title(format!("{}#{} Origin Chan({})", msg.author.name, msg.author.discriminator, channel_name))
+                //     .description(&msg.content)
+                // })
+                m.content(&msg.content)
             }).await.unwrap();
         }
     }

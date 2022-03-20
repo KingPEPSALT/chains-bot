@@ -48,7 +48,7 @@ async fn watch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
 
     }else{
         // was a channel provided
-        match parse_channel(args.advance().single::<String>().unwrap()) {
+        match parse_channel(&args.advance().single::<String>().unwrap()) {
             Ok(ch) => {
                 // add a channel to the database using sea_orm active models
                 db::member::ActiveModel{

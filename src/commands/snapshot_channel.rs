@@ -15,7 +15,7 @@ async fn snapshot_channel(ctx: &Context, msg: &Message, mut args: Args) -> Comma
         return Ok(());
     }
 
-    let channel_id = match parse_channel(args.single::<String>().unwrap()){
+    let channel_id = match parse_channel(&args.single::<String>().unwrap()){
         Ok(id) => id,
         Err(_) => {
             msg.reply(ctx, "That is not a valid channel ID or channel mention.").await?;

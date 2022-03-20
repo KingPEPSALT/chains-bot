@@ -2,7 +2,7 @@ use core::fmt;
 use std::str::FromStr;
 
 use crate::{commands::parse_channel, Connection, MirrorChannelCache};
-use db::sea_orm::{EntityTrait, Set, ActiveModelTrait};
+use db::sea_orm::{EntityTrait, Set, ActiveModelTrait, ActiveValue::NotSet};
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::channel::Message,
@@ -57,9 +57,12 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 match MirrorArgument::from(first_argument) {
                     MirrorArgument::Remove => {
                         if let Some(_) = data.get::<MirrorChannelCache>().unwrap().get(message_channel_id) {
-                            db::channel::Entity::find_by_id(message_channel_id.to_owned())
+                            let mut x: db::channel::ActiveModel = db::channel::Entity::find_by_id(message_channel_id.to_owned())
                             .one(con).await
-                            .expect("oh no!").unwrap().mirror_to_channel_id = None;
+                            .expect("oh no!").unwrap().into();
+                            msg.reply(&ctx, "poopy").await?;
+                            x.mirror_to_channel_id = Set(None);
+                            x.update(con).await?;
                             data.get_mut::<MirrorChannelCache>().unwrap().remove(message_channel_id);
                         }
                     },
@@ -72,16 +75,20 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     }
     else if arg_array.len() == 1{
         match MirrorArgument::from(first_argument) {
-            MirrorArgument::Remove => {},
+            MirrorArgument::Remove => {
+                //TODO:
+            },
             MirrorArgument::Channel => {
                 let mut data = ctx.data.write().await;
                 let con = data.get::<Connection>().unwrap();
-                match parse_channel(arg_array[0].to_owned()) {
+                match parse_channel(arg_array[0]) {
                     Ok(mirror_channel) => {
                         match db::channel::Entity::find_by_id(message_channel_id.to_owned()).one(con).await {
                             Ok(Some(model)) => {
                                 let mut channel: db::channel::ActiveModel = model.into();
                                 channel.mirror_to_channel_id = Set(Some(mirror_channel));
+                                channel.update(con).await?;
+                                data.get_mut::<MirrorChannelCache>().unwrap().insert(message_channel_id.to_owned(), mirror_channel);
                             },
                             Ok(None) => {
                                 db::channel::ActiveModel {

@@ -8,7 +8,7 @@ pub mod disclaimer;
 pub mod watch;
 pub mod mirror;
 
-pub fn parse_channel(channel_mention: String) -> Result<i64, ParseIntError>{
+pub fn parse_channel(channel_mention: &str) -> Result<i64, ParseIntError>{
     match channel_mention.parse::<i64>() {
         Ok(t) => Ok(t),
         Err(_) => channel_mention[2..channel_mention.len()-1].parse::<i64>()
