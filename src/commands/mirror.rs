@@ -147,6 +147,5 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             }
         }
     }
-
     Ok(())
 }
