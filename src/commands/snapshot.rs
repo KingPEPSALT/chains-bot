@@ -143,7 +143,10 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     };
 
     // file heading
-    let requester_tag = msg.author.nick_in(ctx, guild as u64).await.unwrap_or(" ".to_string());
+    let requester_tag = match msg.author.nick_in(ctx, guild as u64).await {
+        Some(t) => format!("({})", t),
+        None => "".into()
+    };
     snapshot_file = format!(
         "SNAPSHOT [REQUESTOR: {}{}#{} ({})] [{} MESSAGES]\n\n{}", 
         msg.author.name, 
