@@ -51,27 +51,17 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if arg_array.len() == 2 {
         let second_argument = arg_array[1];
         match [MirrorArgument::from(first_argument), MirrorArgument::from(second_argument)] {
-            [_, MirrorArgument::Remove] => {
+            [_, MirrorArgument::Remove|MirrorArgument::List|MirrorArgument::Help] => {
                 msg.reply(&ctx, "Mirror must be either channel_id, channel_id, or -r channel_id to remove the mirror channel").await?;
                 return Ok(());
             },
             _ => {
-                let mut data = ctx.data.write().await;
-                let con = data.get::<Connection>().unwrap();
+
                 match MirrorArgument::from(first_argument) {
                     MirrorArgument::Remove => {
-                        if let Some(_) = data.get::<MirrorChannelCache>().unwrap().get(message_channel_id) {
-                            let mut x: db::channel::ActiveModel = db::channel::Entity::find_by_id(message_channel_id.to_owned())
-                            .one(con).await
-                            .expect("oh no!").unwrap().into();
-                            msg.reply(&ctx, "poopy").await?;
-                            x.mirror_to_channel_id = Set(None);
-                            x.update(con).await?;
-                            data.get_mut::<MirrorChannelCache>().unwrap().remove(message_channel_id);
-                        }
+
                     },
                     _ => {
-                        //TODO:
                     }
                 }
             }
@@ -80,7 +70,17 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     else if arg_array.len() == 1{
         match MirrorArgument::from(first_argument) {
             MirrorArgument::Remove => {
-                //TODO:
+                let mut data = ctx.data.write().await;
+                let con = data.get::<Connection>().unwrap();
+                if let Some(_) = data.get::<MirrorChannelCache>().unwrap().get(message_channel_id) {
+                    let mut x: db::channel::ActiveModel = db::channel::Entity::find_by_id(message_channel_id.to_owned())
+                        .one(con).await
+                        .expect("oh no!").unwrap().into();
+                    msg.reply(&ctx, "poopy").await?;
+                    x.mirror_to_channel_id = Set(None);
+                    x.update(con).await?;
+                    data.get_mut::<MirrorChannelCache>().unwrap().remove(message_channel_id);
+                }
             },
             MirrorArgument::Channel => {
                 let mut data = ctx.data.write().await;
