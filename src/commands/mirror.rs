@@ -6,7 +6,7 @@ use db::sea_orm::{EntityTrait, Set, ActiveModelTrait, ColumnTrait, QueryFilter, 
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::{channel::Message, id::ChannelId},
-    prelude::Context,
+    prelude::Context, utils::Colour,
 };
 
 use crate::utilities::permission_utilities::*;
@@ -14,14 +14,16 @@ use crate::utilities::permission_utilities::*;
 enum MirrorArgument {
     Channel,
     List,
+    Help,
     Remove
 }
 impl std::str::FromStr for MirrorArgument {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "-r" => Ok(MirrorArgument::Remove),
-            "-l" => Ok(MirrorArgument::List),
+            "-r"|"-remove" => Ok(MirrorArgument::Remove),
+            "-l"|"-list" => Ok(MirrorArgument::List),
+            "-h"|"-help"|"-i"|"-info" => Ok(MirrorArgument::Help),
             _ => Ok(MirrorArgument::Channel)
         }
     }
@@ -114,20 +116,34 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             },
             MirrorArgument::List => {
                 let data = ctx.data.write().await;
-                msg.reply(&ctx, "ok?").await?;
                 let con = data.get::<Connection>().unwrap();
                 let channels = db::channel::Entity::find()
                     .filter(db::channel::Column::MirrorToChannelId.eq(Some(message_channel_id.to_owned())))
                     .all(con).await.expect("error here 1");
-                msg.reply(&ctx, "ok? 2").await?;
                 
-                let mut channel_response = string::String::new();
+                let mut channel_response = string::String::from("");
                 for channel in channels {
                     let n: ChannelId = ChannelId(channel.channel_id as u64);
                     let channel_name = &ctx.cache.guild_channel(n).await.unwrap().name;
-                    channel_response += &format!("\n {}", &channel_name);
+                    channel_response += &format!("\n- #{}", &channel_name);
                 }
-                msg.reply(&ctx, channel_response).await.expect("error here 2");
+                ChannelId(*message_channel_id as u64).send_message(&ctx, |m| {
+                    m.embed(|e| {
+                        e.color(Colour::LIGHTER_GREY)
+                        .title("Source Channels")
+                        .description(channel_response)
+                    })
+                }).await.unwrap();
+            },
+            MirrorArgument::Help => {
+                ChannelId(*message_channel_id as u64).send_message(&ctx, |m| {
+                    m.embed(|e| {
+                        e.color(Colour::FABLED_PINK)
+                        .title("Mirror")
+                        .description(format!("[required](optional) \"|\" denotes this OR that : [{}mirror|mirror_channel|mc] [-l|-list|-r|-remove|-h|-help|-i|-info|#mirroring_channel] \n (#source_channel) Mirror is the way chains handles logging messages, with the purpose of combining discussions from different channels 
+                        for the purpose of having all server discussion in a single place for audit and moderation purposes", "-"))
+                    })
+                }).await.unwrap();
             }
         }
     }
