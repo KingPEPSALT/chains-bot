@@ -53,12 +53,10 @@ struct General;
 
 #[tokio::main]
 async fn main() -> Result<(), DbErr> {
-    
     let token = dotenv::var("DISCORD_TOKEN")
     .expect("Expected a token in the environment");
 
     let http = Http::new_with_token(&token);
-    
     let (owners, _bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
             let mut owners = HashSet::new();
@@ -83,6 +81,7 @@ async fn main() -> Result<(), DbErr> {
             .group(&GENERAL_GROUP);
     let mut watched_members: HashMap<(i64, i64), Option<i64>> = HashMap::new();
     let mut mirrored_channels: HashMap<i64, i64> = HashMap::new();
+
     for member in db::member::Entity::find().all(&con).await?{
         watched_members.insert((member.guild_id, member.user_id), member.watch_channel_id);
     };

@@ -110,7 +110,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     },
                     Err(_) => {
                         msg.reply(ctx, "Please supply a channel to mirror into").await?;
-                        return Ok(());  
+                        return Ok(());
                     }
                 }
             },
@@ -120,7 +120,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 let channels = db::channel::Entity::find()
                     .filter(db::channel::Column::MirrorToChannelId.eq(Some(message_channel_id.to_owned())))
                     .all(con).await.expect("error here 1");
-                
+
                 let mut channel_response = string::String::from("");
                 for channel in channels {
                     let n: ChannelId = ChannelId(channel.channel_id as u64);
