@@ -8,7 +8,7 @@ use serenity::{
 
 use crate::Connection;
 
-const DISSEMINATION: &str = "The use of the snapshot command requires logging of information which must be disseminated to clients of this bot and of which they must agree to. Chain will not locally but, instead, within the guild, log this information from the member: usernames, discriminators, client IDs and messages sent within this server. It will send this data in bytes that will form a file at some designated channel; this file is never stored anywhere but within the server. It will not do anything more with the information gathered and to repeat, it will not store it locally.";
+const DISSEMINATION: &str = "The use of this bot requires logging to an external database for the bot to query. It is used only to store configuration for a guild and will store user IDs, guild IDs, roleIDs and channel IDs only. Chains will do no more than utilise this information in the commands available and this information will never leave the database otherwise.";
 
 #[command] 
 #[num_args(0)]
