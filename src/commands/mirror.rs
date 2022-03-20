@@ -1,11 +1,11 @@
 use core::fmt;
-use std::str::FromStr;
+use std::{str::FromStr, string};
 
 use crate::{commands::parse_channel, Connection, MirrorChannelCache};
-use db::sea_orm::{EntityTrait, Set, ActiveModelTrait, ActiveValue::NotSet};
+use db::sea_orm::{EntityTrait, Set, ActiveModelTrait, ColumnTrait, QueryFilter, Value, IntoSimpleExpr};
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
-    model::channel::Message,
+    model::{channel::Message, id::ChannelId},
     prelude::Context,
 };
 
@@ -13,6 +13,7 @@ use crate::utilities::permission_utilities::*;
 
 enum MirrorArgument {
     Channel,
+    List,
     Remove
 }
 impl std::str::FromStr for MirrorArgument {
@@ -20,6 +21,7 @@ impl std::str::FromStr for MirrorArgument {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "-r" => Ok(MirrorArgument::Remove),
+            "-l" => Ok(MirrorArgument::List),
             _ => Ok(MirrorArgument::Channel)
         }
     }
@@ -109,6 +111,23 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                         return Ok(());  
                     }
                 }
+            },
+            MirrorArgument::List => {
+                let data = ctx.data.write().await;
+                msg.reply(&ctx, "ok?").await?;
+                let con = data.get::<Connection>().unwrap();
+                let channels = db::channel::Entity::find()
+                    .filter(db::channel::Column::MirrorToChannelId.eq(Some(message_channel_id.to_owned())))
+                    .all(con).await.expect("error here 1");
+                msg.reply(&ctx, "ok? 2").await?;
+                
+                let mut channel_response = string::String::new();
+                for channel in channels {
+                    let n: ChannelId = ChannelId(channel.channel_id as u64);
+                    let channel_name = &ctx.cache.guild_channel(n).await.unwrap().name;
+                    channel_response += &format!("\n {}", &channel_name);
+                }
+                msg.reply(&ctx, channel_response).await.expect("error here 2");
             }
         }
     }
