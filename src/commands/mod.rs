@@ -1,9 +1,11 @@
-use crate::{Connection, EntityTrait, MirrorChannelCache};
-use db::sea_orm::{ActiveModelTrait, ColumnTrait, IntoSimpleExpr, QueryFilter, Set, Value};
-use serenity::client::Context;
 use std::num::ParseIntError;
 
+use serenity::client::Context;
+
+use db::sea_orm::{ActiveModelTrait, Set};
 use db::sea_orm::sea_query::error::Error;
+
+use crate::{Connection, EntityTrait};
 
 pub mod disclaimer;
 pub mod mirror;
@@ -44,19 +46,19 @@ async fn get_channel(
         .expect("nice")
     {
         Some(channel) => {
-            let mut active_channel: db::channel::ActiveModel = channel.into();
+            let active_channel: db::channel::ActiveModel = channel.into();
             Ok(Some(active_channel))
         }
         None => {
-            let mut active_channel: db::channel::ActiveModel = db::channel::ActiveModel {
+            let active_channel: db::channel::ActiveModel = db::channel::ActiveModel {
                 guild_id: Set(guild_id.to_owned()),
                 channel_id: Set(channel_id.to_owned()),
                 mirror_to_channel_id: Set(None),
             }
-            .insert(con)
-            .await
-            .expect("Issue creating channel")
-            .into();
+                .insert(con)
+                .await
+                .expect("Issue creating channel")
+                .into();
             Ok(Some(active_channel))
         }
     };
@@ -72,5 +74,5 @@ pub async fn get_channel_from_db(
         ctx,
         guild_id,
     )
-    .await
+        .await
 }

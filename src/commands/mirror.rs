@@ -1,10 +1,6 @@
-use core::fmt;
+
 use std::{str::FromStr, string};
 
-use crate::{commands::parse_channel, Connection, MirrorChannelCache};
-
-use db::sea_orm::*;
-use sea_query::*;
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::{channel::Message, id::ChannelId},
@@ -12,7 +8,11 @@ use serenity::{
     utils::Colour,
 };
 
+use db::sea_orm::*;
+
+use crate::commands::{get_channel_from_db, parse_channel_as_option};
 use crate::utilities::permission_utilities::*;
+use crate::{commands::parse_channel, Connection, MirrorChannelCache};
 
 enum MirrorArgument {
     Channel(Option<i64>),
@@ -20,6 +20,7 @@ enum MirrorArgument {
     Help,
     Remove,
 }
+
 impl std::str::FromStr for MirrorArgument {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -31,6 +32,7 @@ impl std::str::FromStr for MirrorArgument {
         }
     }
 }
+
 impl MirrorArgument {
     fn from(s: &str) -> Self {
         MirrorArgument::from_str(s).unwrap()
@@ -48,7 +50,7 @@ impl MirrorArgument {
     mc,
     mirror
 )]
-async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+async fn mirror(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     if !is_message_author_admin(ctx, msg).await {
         msg.reply(ctx, "You must be a moderator to run this command.")
             .await?;
@@ -65,33 +67,31 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
             MirrorArgument::from(second_argument),
         ] {
             // source INTO mirror
-            [MirrorArgument::Channel(Some(x)), MirrorArgument::Channel(Some(y))] => {
-                match [
-                    get_channel_from_db(first_argument, &ctx, message_guild_id).await,
-                    get_channel_from_db(second_argument, &ctx, message_guild_id).await,
-                ] {
-                    [Ok(Some(mut first)), Ok(Some(mut second))] => {
-                        let [source_channel_id, mirror_channel_id] = [x, y];
-                        println!();
-                        let mut data = ctx.data.write().await;
-                        let con = data.get::<Connection>().unwrap();
-                        println!("nice2");
-                        first.mirror_to_channel_id = Set(Some(mirror_channel_id));
-                        first.update(con).await?;
-                        data.get_mut::<MirrorChannelCache>()
-                            .unwrap()
-                            .insert(source_channel_id, mirror_channel_id);
-                    }
-                    [Err(e), Err(y)] => {
-                        println!("evil error")
-                    }
-                    [_, _] => {
-                        println!("mysterioius")
-                    }
+            [MirrorArgument::Channel(Some(x)), MirrorArgument::Channel(Some(y))] => match [
+                get_channel_from_db(first_argument, &ctx, message_guild_id).await,
+                get_channel_from_db(second_argument, &ctx, message_guild_id).await,
+            ] {
+                [Ok(Some(mut first)), Ok(Some(mut _second))] => {
+                    let [source_channel_id, mirror_channel_id] = [x, y];
+                    println!();
+                    let mut data = ctx.data.write().await;
+                    let con = data.get::<Connection>().unwrap();
+                    println!("nice2");
+                    first.mirror_to_channel_id = Set(Some(mirror_channel_id));
+                    first.update(con).await?;
+                    data.get_mut::<MirrorChannelCache>()
+                        .unwrap()
+                        .insert(source_channel_id, mirror_channel_id);
                 }
-            }
+                [Err(_e), Err(_y)] => {
+                    println!("evil error")
+                }
+                [_, _] => {
+                    println!(" ")
+                }
+            },
             // remove source ( no longer links to a mirror )
-            [MirrorArgument::Remove, MirrorArgument::Channel(id)] => {
+            [MirrorArgument::Remove, MirrorArgument::Channel(_id)] => {
                 // TODO:
             }
             _ => {
@@ -126,7 +126,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                         .remove(message_channel_id);
                 }
             }
-            MirrorArgument::Channel(id) => {
+            MirrorArgument::Channel(_id) => {
                 let mut data = ctx.data.write().await;
                 let con = data.get::<Connection>().unwrap();
                 match parse_channel(arg_array[0]) {
@@ -151,7 +151,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                                 }
                                 .insert(con)
                                 .await
-                                .expect("COULDNT DO IT LMAO WTF HAHAHAHHA");
+                                .expect("COULDNT DO IT LMAO WTF");
                                 data.get_mut::<MirrorChannelCache>()
                                     .unwrap()
                                     .insert(message_channel_id.to_owned(), mirror_channel);
@@ -201,8 +201,8 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 ChannelId(*message_channel_id as u64).send_message(&ctx, |m| {
                     m.embed(|e| {
                         e.color(Colour::FABLED_PINK)
-                        .title("Mirror")
-                        .description(format!("[required](optional) \"|\" denotes this OR that : [{}mirror|mirror_channel|mc] [-l|-list|-r|-remove|-h|-help|-i|-info|#mirroring_channel] \n (#source_channel) Mirror is the way chains handles logging messages, with the purpose of combining discussions from different channels 
+                            .title("Mirror")
+                            .description(format!("[required](optional) \"|\" denotes this OR that : [{}mirror|mirror_channel|mc] [-l|-list|-r|-remove|-h|-help|-i|-info|#mirroring_channel] \n (#source_channel) Mirror is the way chains handles logging messages, with the purpose of combining discussions from different channels 
                         for the purpose of having all server discussion in a single place for audit and moderation purposes", "-"))
                     })
                 }).await.unwrap();

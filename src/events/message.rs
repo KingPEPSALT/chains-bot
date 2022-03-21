@@ -1,31 +1,32 @@
-
-use serenity::{
-    model::{
-        channel::Message,
-        id::ChannelId, 
-        event::MessageUpdateEvent
-    },
-    client::{
-        Context
-    },
-    utils::Colour
-};
 use crate::events::Handler;
 use crate::MemberCache;
 use crate::MirrorChannelCache;
+use serenity::{
+    client::Context,
+    model::{channel::Message, event::MessageUpdateEvent, id::ChannelId},
+    utils::Colour,
+};
 
 impl Handler {
-    pub async fn handle_message(&self, ctx: Context, msg: Message){
+    pub async fn handle_message(&self, ctx: Context, msg: Message) {
         let data = &ctx.data.read().await;
 
         let guild_id = *msg.guild_id.unwrap().as_u64() as i64;
         let author_id = *msg.author.id.as_u64() as i64;
         let current_channel_id = *msg.channel_id.as_u64() as i64;
 
-        if let Some(Some(t)) = data.get::<MemberCache>().expect("No MemberCache HashMap in client data.")
-        .get(&(guild_id, author_id)){
-
-            let user_colour = msg.member(&ctx.http).await.unwrap().colour(&ctx.cache).await.unwrap_or(Colour::from(0xFFFFFF as u32));
+        if let Some(Some(t)) = data
+            .get::<MemberCache>()
+            .expect("No MemberCache HashMap in client data.")
+            .get(&(guild_id, author_id))
+        {
+            let user_colour = msg
+                .member(&ctx.http)
+                .await
+                .unwrap()
+                .colour(&ctx.cache)
+                .await
+                .unwrap_or(Colour::from(0xFFFFFF as u32));
             let mut attachments = msg.attachments.iter();
 
             ChannelId(*t as u64).send_message(&ctx.http, |m| {
@@ -47,24 +48,39 @@ impl Handler {
                     e
                 })
             }).await.unwrap();
-            while let Some(attachment) = attachments.next(){
-                ChannelId(*t as u64).send_message(&ctx.http, |m| {
-                    m.embed(|e| {
-                        e.colour(user_colour)
-                            .image(&attachment.url)
-                            .footer(|f| {
-                                f.text(format!("by ID: {} in <#{}>. Message ID: {} ", author_id, t, msg.id))
-                            })
-                            .timestamp(msg.timestamp)
+            while let Some(attachment) = attachments.next() {
+                ChannelId(*t as u64)
+                    .send_message(&ctx.http, |m| {
+                        m.embed(|e| {
+                            e.colour(user_colour)
+                                .image(&attachment.url)
+                                .footer(|f| {
+                                    f.text(format!(
+                                        "by ID: {} in <#{}>. Message ID: {} ",
+                                        author_id, t, msg.id
+                                    ))
+                                })
+                                .timestamp(msg.timestamp)
+                        })
                     })
-                }).await.unwrap();
+                    .await
+                    .unwrap();
             }
         }
 
-        if let Some(c_id) = data.get::<MirrorChannelCache>().expect("No Mirror Channel Cache")
-        .get(&current_channel_id) {
+        if let Some(c_id) = data
+            .get::<MirrorChannelCache>()
+            .expect("No Mirror Channel Cache")
+            .get(&current_channel_id)
+        {
             let channel_name = &ctx.cache.guild_channel(msg.channel_id).await.unwrap().name;
-            let user_colour = msg.member(&ctx.http).await.unwrap().colour(&ctx.cache).await.unwrap_or(Colour::from(0xFFFFFF as u32));
+            let user_colour = msg
+                .member(&ctx.http)
+                .await
+                .unwrap()
+                .colour(&ctx.cache)
+                .await
+                .unwrap_or(Colour::from(0xFFFFFF as u32));
             let mut attachments = msg.attachments;
 
             ChannelId(*c_id as u64).send_message(&ctx.http, |m| {
@@ -86,31 +102,54 @@ impl Handler {
                     e
                 })
             }).await.unwrap();
-            while let Some(attachment) = attachments.pop(){
-                ChannelId(*c_id as u64).send_message(&ctx.http, |m| {
-                    m.embed(|e| {
-                        e.colour(user_colour)
-                            .image(attachment.url)
-                            .footer(|f| {
-                                f.text(format!("by ID: {} in <#{}>. Message ID: {} ", author_id, c_id, msg.id))
-                            })
-                            .timestamp(msg.timestamp)
+            while let Some(attachment) = attachments.pop() {
+                ChannelId(*c_id as u64)
+                    .send_message(&ctx.http, |m| {
+                        m.embed(|e| {
+                            e.colour(user_colour)
+                                .image(attachment.url)
+                                .footer(|f| {
+                                    f.text(format!(
+                                        "by ID: {} in <#{}>. Message ID: {} ",
+                                        author_id, c_id, msg.id
+                                    ))
+                                })
+                                .timestamp(msg.timestamp)
+                        })
                     })
-                }).await.unwrap();
+                    .await
+                    .unwrap();
             }
         }
     }
-    pub async fn handle_message_update(&self, ctx: Context, _old: Option<Message>, _new: Option<Message>, event: MessageUpdateEvent){
+    pub async fn handle_message_update(
+        &self,
+        ctx: Context,
+        _old: Option<Message>,
+        _new: Option<Message>,
+        event: MessageUpdateEvent,
+    ) {
         let data = ctx.data.read().await;
         let msg = event;
         let auth = &msg.author.unwrap();
 
         let guild_id = *msg.guild_id.unwrap().as_u64() as i64;
         let author_id = *auth.id.as_u64() as i64;
-        
-        if let Some(Some(t)) = data.get::<MemberCache>().expect("No MemberCache HashMap in client data.")
-        .get(&(guild_id, author_id)){
-            let user_colour = msg.guild_id.unwrap().member(&ctx.http, auth).await.unwrap().colour(ctx.cache).await.unwrap_or(Colour::from(0xFFFFFF as u32));
+
+        if let Some(Some(t)) = data
+            .get::<MemberCache>()
+            .expect("No MemberCache HashMap in client data.")
+            .get(&(guild_id, author_id))
+        {
+            let user_colour = msg
+                .guild_id
+                .unwrap()
+                .member(&ctx.http, auth)
+                .await
+                .unwrap()
+                .colour(ctx.cache)
+                .await
+                .unwrap_or(Colour::from(0xFFFFFF as u32));
 
             ChannelId(*t as u64)
             .send_message(&ctx.http, |m| {
@@ -130,5 +169,4 @@ impl Handler {
             }).await.unwrap();
         }
     }
-
 }
