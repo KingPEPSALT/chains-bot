@@ -1,7 +1,6 @@
 use core::fmt;
 use std::{str::FromStr, string};
 
-use crate::commands::{get_channel_from_db, parse_channel_as_option};
 use crate::{commands::parse_channel, Connection, MirrorChannelCache};
 
 use db::sea_orm::*;
@@ -77,7 +76,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                         let mut data = ctx.data.write().await;
                         let con = data.get::<Connection>().unwrap();
                         println!("nice2");
-                        first.mirror_to_channel_id = Set(Some((mirror_channel_id)));
+                        first.mirror_to_channel_id = Set(Some(mirror_channel_id));
                         first.update(con).await?;
                         data.get_mut::<MirrorChannelCache>()
                             .unwrap()
@@ -158,7 +157,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                                     .insert(message_channel_id.to_owned(), mirror_channel);
                             }
                             Err(_) => {
-                                msg.reply(&ctx, "Valid Channel Not Supplied");
+                                msg.reply(&ctx, "Valid Channel Not Supplied").await?;
                             }
                         }
                     }
