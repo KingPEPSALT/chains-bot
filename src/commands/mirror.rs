@@ -10,12 +10,12 @@ use serenity::{
     prelude::Context, utils::Colour,
 };
 use db::sea_orm::Value::BigInt;
-use crate::commands::get_channel_from_db;
+use crate::commands::{get_channel_from_db, parse_channel_as_option};
 
 use crate::utilities::permission_utilities::*;
 
 enum MirrorArgument {
-    Channel,
+    Channel(Option<i64>),
     List,
     Help,
     Remove
@@ -27,7 +27,7 @@ impl std::str::FromStr for MirrorArgument {
             "-r"|"-remove" => Ok(MirrorArgument::Remove),
             "-l"|"-list" => Ok(MirrorArgument::List),
             "-h"|"-help"|"-i"|"-info" => Ok(MirrorArgument::Help),
-            _ => Ok(MirrorArgument::Channel)
+            x => Ok(MirrorArgument::Channel(parse_channel_as_option(x)))
         }
     }
 }
@@ -54,24 +54,19 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         let second_argument = arg_array[1];
         match [MirrorArgument::from(first_argument), MirrorArgument::from(second_argument)] {
             // source INTO mirror
-            [MirrorArgument::Channel, MirrorArgument::Channel] => {
+            [MirrorArgument::Channel(x), MirrorArgument::Channel(y)] => {
                 match [get_channel_from_db(first_argument, &ctx, message_guild_id).await,
                        get_channel_from_db(second_argument, &ctx, message_guild_id).await] {
                     [Ok(Some(mut first)), Ok(Some(mut second))] => {
-                        let [source_channel_id, mirror_channel_id] = match [first.get_primary_key_value(), second.get_primary_key_value()] {
-                            [Some(ValueTuple::One(Value::BigInt(source))), Some(ValueTuple::One(Value::BigInt(mirror)))] => {
-                                [source, mirror]
-                            },
-                            [_,_] => [None, None]
-                        };
-                        println!("nice");
+                        let [source_channel_id, mirror_channel_id] = [x.unwrap(), y.unwrap()];
+                        println!();
                         let mut data = ctx.data.write().await;
                         let con = data.get::<Connection>().unwrap();
                         println!("nice2");
-                        first.mirror_to_channel_id = Set(Some((mirror_channel_id.unwrap())));
+                        first.mirror_to_channel_id = Set(Some((mirror_channel_id)));
                         first.update(con).await?;
                         data.get_mut::<MirrorChannelCache>().unwrap()
-                            .insert(source_channel_id.unwrap(), mirror_channel_id.unwrap());
+                            .insert(source_channel_id, mirror_channel_id);
                         println!("wow what's happening");
                     },
                     [Err(e), Err(y)] => {
@@ -83,7 +78,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 }
             },
             // remove source ( no longer links to a mirror )
-            [MirrorArgument::Remove, MirrorArgument::Channel] => {
+            [MirrorArgument::Remove, MirrorArgument::Channel(id)] => {
                 // TODO:
             },
             _ => {
@@ -105,7 +100,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     data.get_mut::<MirrorChannelCache>().unwrap().remove(message_channel_id);
                 }
             },
-            MirrorArgument::Channel => {
+            MirrorArgument::Channel(id) => {
                 let mut data = ctx.data.write().await;
                 let con = data.get::<Connection>().unwrap();
                 match parse_channel(arg_array[0]) {

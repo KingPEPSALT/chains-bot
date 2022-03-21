@@ -23,7 +23,12 @@ pub fn parse_channel(channel_mention: &str) -> Result<i64, ParseIntError>{
 pub fn parse_channel_as_option(channel_mention: &str) -> Option<i64> {
     match channel_mention.parse::<i64>(){
         Ok(t) => Some(t),
-        Err(_) => None
+        Err(_) => {
+            match channel_mention[2..channel_mention.len()-1].parse::<i64>() {
+                Ok(id) => Some(id),
+                Err(_) => None
+            }
+        }
     }
 }
 
@@ -31,7 +36,7 @@ pub fn parse_channel_as_option(channel_mention: &str) -> Option<i64> {
 async fn get_channel(channel_id: i64, ctx: &Context, guild_id: &i64) -> Result<Option<db::channel::ActiveModel>, Error> {
     let data = ctx.data.write().await;
     let con = data.get::<Connection>().expect("wow");
-    return match db::channel::Entity::find_by_id(guild_id.to_owned()).one(con).await.expect("nice") {
+    return match db::channel::Entity::find_by_id(channel_id.to_owned()).one(con).await.expect("nice") {
         Some(channel) => {
             let mut active_channel: db::channel::ActiveModel = channel.into();
             println!("has channel");
@@ -43,7 +48,7 @@ async fn get_channel(channel_id: i64, ctx: &Context, guild_id: &i64) -> Result<O
             let mut active_channel: db::channel::ActiveModel =
                 db::channel::ActiveModel {
                     guild_id: Set(guild_id.to_owned()),
-                    channel_id: Set(guild_id.to_owned()),
+                    channel_id: Set(channel_id.to_owned()),
                     mirror_to_channel_id: Set(None)
                 }.insert(con).await.expect("Issue creating channel").into();
             Ok(Some(active_channel))
