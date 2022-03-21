@@ -4,14 +4,15 @@ use serenity::{
     prelude::Context
 };
 use std::{mem::swap, collections::HashMap};
-use crate::commands::{enforce_compliancy, is_moderator};
+use crate::utilities::permission_utilities::{is_message_author_admin, enforce_request_compliancy};
+
 #[command] 
 #[min_args(1)]
 #[max_args(2)]
 #[aliases(log_messages, log, snap, snap_messages, snapshot_messages, snip)]
 async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     
-    if !is_moderator(ctx, msg).await{
+    if !is_message_author_admin(ctx, msg).await{
         msg.reply(ctx, "You must be a moderator to run this command.").await?;
         return Ok(())
     }
@@ -20,8 +21,7 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     let guild = *msg.guild_id.unwrap().as_u64();
 
     // check that the guild is compliant with the bot disclaimer
-    // see mod.rs for enforce_compliancy
-    let possible_guild = enforce_compliancy(ctx, msg).await;
+    let possible_guild = enforce_request_compliancy(ctx, msg).await;
     match &possible_guild {
         Some(guild) => {
             if ! guild.is_compliant {
@@ -143,7 +143,10 @@ async fn snapshot(ctx: &Context, msg: &Message, args: Args) -> CommandResult{
     };
 
     // file heading
-    let requester_tag = msg.author.nick_in(ctx, guild as u64).await.unwrap_or(" ".to_string());
+    let requester_tag = match msg.author.nick_in(ctx, guild as u64).await {
+        Some(t) => format!("({})", t),
+        None => "".into()
+    };
     snapshot_file = format!(
         "SNAPSHOT [REQUESTOR: {}{}#{} ({})] [{} MESSAGES]\n\n{}", 
         msg.author.name, 

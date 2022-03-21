@@ -15,15 +15,17 @@ async fn snapshot_channel(ctx: &Context, msg: &Message, mut args: Args) -> Comma
         return Ok(());
     }
 
-    let channel_id = match parse_channel(args.single::<String>().unwrap()){
+    let channel_id = match parse_channel(&args.single::<String>().unwrap()){
         Ok(id) => id,
         Err(_) => {
             msg.reply(ctx, "That is not a valid channel ID or channel mention.").await?;
             return Ok(());
         }
     } as i64;
+    
     let data = ctx.data.read().await;
     let con = data.get::<Connection>().unwrap();
+
     let mut guild : db::guild::ActiveModel = db::guild::Entity::find_by_id(*msg.guild_id.unwrap().as_u64() as i64).one(con).await?.unwrap().into();
     guild.snap_channel_id = Set(Some(channel_id));
     match guild.update(con).await {
