@@ -2,12 +2,15 @@ use core::fmt;
 use std::{str::FromStr, string};
 
 use crate::{commands::parse_channel, Connection, MirrorChannelCache};
-use db::sea_orm::{EntityTrait, Set, ActiveModelTrait, ColumnTrait, QueryFilter, Value, IntoSimpleExpr};
+use db::sea_orm::*;
+use sea_query::*;
 use serenity::{
     framework::standard::{macros::command, Args, CommandResult},
     model::{channel::Message, id::ChannelId},
     prelude::Context, utils::Colour,
 };
+use db::sea_orm::Value::BigInt;
+use crate::commands::get_channel_from_db;
 
 use crate::utilities::permission_utilities::*;
 
@@ -40,10 +43,9 @@ impl MirrorArgument {
 #[aliases(mirror_channel, mirrorChannel, mirrorchannel, mirror_channel, mc, mirror)]
 async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if !is_message_author_admin(ctx, msg).await{
-        msg.reply(ctx, "You must be a moderator to run this command.").await?;
+        &msg.reply(ctx, "You must be a moderator to run this command.").await?;
         return Ok(())
     }
-
     let arg_array = args.raw().collect::<Vec<&str>>();
     let message_channel_id = &i64::from(msg.channel_id);
     let message_guild_id = &i64::from(msg.guild_id.unwrap());
@@ -51,19 +53,41 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     if arg_array.len() == 2 {
         let second_argument = arg_array[1];
         match [MirrorArgument::from(first_argument), MirrorArgument::from(second_argument)] {
-            [_, MirrorArgument::Remove|MirrorArgument::List|MirrorArgument::Help] => {
-                msg.reply(&ctx, "Mirror must be either channel_id, channel_id, or -r channel_id to remove the mirror channel").await?;
-                return Ok(());
-            },
-            _ => {
-
-                match MirrorArgument::from(first_argument) {
-                    MirrorArgument::Remove => {
-
+            // source INTO mirror
+            [MirrorArgument::Channel, MirrorArgument::Channel] => {
+                match [get_channel_from_db(first_argument, &ctx, message_guild_id).await,
+                       get_channel_from_db(second_argument, &ctx, message_guild_id).await] {
+                    [Ok(Some(mut first)), Ok(Some(mut second))] => {
+                        let [source_channel_id, mirror_channel_id] = match [first.get_primary_key_value(), second.get_primary_key_value()] {
+                            [Some(ValueTuple::One(Value::BigInt(source))), Some(ValueTuple::One(Value::BigInt(mirror)))] => {
+                                [source, mirror]
+                            },
+                            [_,_] => [None, None]
+                        };
+                        println!("nice");
+                        let mut data = ctx.data.write().await;
+                        let con = data.get::<Connection>().unwrap();
+                        println!("nice2");
+                        first.mirror_to_channel_id = Set(Some((mirror_channel_id.unwrap())));
+                        first.update(con).await?;
+                        data.get_mut::<MirrorChannelCache>().unwrap()
+                            .insert(source_channel_id.unwrap(), mirror_channel_id.unwrap());
+                        println!("wow what's happening");
                     },
-                    _ => {
+                    [Err(e), Err(y)] => {
+                        println!("evil error")
+                    },
+                    [_, _] => {
+                        println!("mysterioius")
                     }
                 }
+            },
+            // remove source ( no longer links to a mirror )
+            [MirrorArgument::Remove, MirrorArgument::Channel] => {
+                // TODO:
+            },
+            _ => {
+                msg.reply(&ctx, "Invalid mirror arguments supplied. Please refer to mirror --help for usage").await?;
             }
         }
     }
@@ -76,7 +100,6 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                     let mut x: db::channel::ActiveModel = db::channel::Entity::find_by_id(message_channel_id.to_owned())
                         .one(con).await
                         .expect("oh no!").unwrap().into();
-                    msg.reply(&ctx, "poopy").await?;
                     x.mirror_to_channel_id = Set(None);
                     x.update(con).await?;
                     data.get_mut::<MirrorChannelCache>().unwrap().remove(message_channel_id);
@@ -104,7 +127,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                                 data.get_mut::<MirrorChannelCache>().unwrap().insert(message_channel_id.to_owned(), mirror_channel);
                             },
                             Err(_) => {
-                                // TODO:
+                                msg.reply(&ctx, "Valid Channel Not Supplied");
                             }
                         }
                     },
@@ -119,7 +142,7 @@ async fn mirror(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
                 let con = data.get::<Connection>().unwrap();
                 let channels = db::channel::Entity::find()
                     .filter(db::channel::Column::MirrorToChannelId.eq(Some(message_channel_id.to_owned())))
-                    .all(con).await.expect("error here 1");
+                    .all(con).await.expect("Mirror channel not found");
 
                 let mut channel_response = string::String::from("");
                 for channel in channels {
