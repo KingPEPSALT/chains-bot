@@ -5,23 +5,22 @@ use serenity::{
     model::channel::Message,
     prelude::Context
 };
-use super::enforce_compliancy;
-use crate::{MemberCache, Connection, commands::{parse_channel, is_moderator}};
+use crate::{MemberCache, Connection, commands::{parse_channel}};
+use crate::utilities::permission_utilities::*;
 
 #[command] 
 #[min_args(1)]
 #[max_args(2)]
 #[aliases(monitor)]
 async fn watch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
-    if !is_moderator(ctx, msg).await{
+    if !is_message_author_admin(ctx, msg).await{
         msg.reply(ctx, "You must be a moderator to run this command").await?;
         return Ok(())
     }
 
-
     let guild_id = *msg.guild_id.unwrap().as_u64() as i64;
 
-    if !enforce_compliancy(ctx, msg).await.unwrap().is_compliant{
+    if !enforce_request_compliancy(ctx, msg).await.unwrap().is_compliant{
         return Ok(())
     }
 
@@ -49,7 +48,7 @@ async fn watch(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult{
 
     }else{
         // was a channel provided
-        match parse_channel(args.advance().single::<String>().unwrap()) {
+        match parse_channel(&args.advance().single::<String>().unwrap()) {
             Ok(ch) => {
                 // add a channel to the database using sea_orm active models
                 db::member::ActiveModel{

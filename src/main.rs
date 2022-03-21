@@ -1,5 +1,6 @@
 pub mod commands;
 pub mod events;
+pub mod utilities;
 
 use events::Handler;
 use dotenv;
@@ -12,7 +13,7 @@ use std::{sync::Arc, collections::{HashSet, HashMap}};
 use std::time::Duration;
 use db::sea_orm::{ConnectOptions, DbErr, Set, Database, EntityTrait, DbConn};
 use db::*;
-use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*, watch::*};
+use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*, watch::*, mirror::*};
 
 use serenity::{
     framework::{standard::macros::group, StandardFramework},
@@ -32,6 +33,12 @@ pub struct MemberCache;
 impl TypeMapKey for MemberCache{
     type Value = HashMap<(i64, i64), Option<i64>>;
 }
+
+pub struct MirrorChannelCache;
+impl TypeMapKey for MirrorChannelCache {
+    type Value = HashMap<i64, i64>;
+}
+
 pub struct ShardManagerContainer;
 
 impl TypeMapKey for ShardManagerContainer{
@@ -39,19 +46,17 @@ impl TypeMapKey for ShardManagerContainer{
 }
 
 #[group]
-#[commands(ping, snapshot, snapshot_channel, mod_role, disclaimer, watch)]
+#[commands(ping, snapshot, snapshot_channel, mod_role, disclaimer, watch, mirror)]
 struct General;
 
 
 
 #[tokio::main]
 async fn main() -> Result<(), DbErr> {
-    
     let token = dotenv::var("DISCORD_TOKEN")
     .expect("Expected a token in the environment");
 
     let http = Http::new_with_token(&token);
-    
     let (owners, _bot_id) = match http.get_current_application_info().await {
         Ok(info) => {
             let mut owners = HashSet::new();
@@ -75,27 +80,22 @@ async fn main() -> Result<(), DbErr> {
             .configure(|c| c.owners(owners).prefix(dotenv::var("DISCORD_PREFIX").unwrap()))
             .group(&GENERAL_GROUP);
     let mut watched_members: HashMap<(i64, i64), Option<i64>> = HashMap::new();
+    let mut mirrored_channels: HashMap<i64, i64> = HashMap::new();
+
     for member in db::member::Entity::find().all(&con).await?{
         watched_members.insert((member.guild_id, member.user_id), member.watch_channel_id);
     };
-
-    // println!("\nLooking through WatchChannel cache.");
-    // for (k, v) in &wch{
-    //     println!("{} - {}", k, v);
-    // }
-    // println!("\nLooking through WatchMember cache.");
-    // for (k, v) in &wmem{
-    //     println!("{}", k);
-    //     for i in 0..v.len()-1{
-    //         println!("  ├─ {}", v[i]);
-    //     }
-    //     println!("  └─ {}", v[v.len()-1]);
-    // }
+    for channel in db::channel::Entity::find().all(&con).await? {
+        if channel.mirror_to_channel_id.is_some() {
+            mirrored_channels.insert(channel.channel_id, channel.mirror_to_channel_id.unwrap());
+        }
+    }
 
     let mut client =
         Client::builder(&token)
             .framework(framework)
             .type_map_insert::<MemberCache>(watched_members)
+            .type_map_insert::<MirrorChannelCache>(mirrored_channels)
             .type_map_insert::<Connection>(con)
             .event_handler(Handler)
             .await
@@ -107,31 +107,6 @@ async fn main() -> Result<(), DbErr> {
 
     Ok(())
 }
-
-
-
-
-
-    /* BENCHMARKING CODE*/
-    /*
-    let dummies = _test_entries(5000).await?;
-    
-    let now = Instant::now();
-    let db =  Database::connect(opt).await?;
-    let finished_connect = now.elapsed();
-    
-    let res = db::guild::Entity::insert_many(dummies).exec(&db).await?;
-    let finished_insert = now.elapsed() - finished_connect;
-    
-    let guilds: Vec<guild::Model> = db::guild::Entity::find().all(&db).await?;
-    let finished_read = now.elapsed() - finished_insert - finished_connect;
-    for guild in guilds{
-        print!("{} ", guild.guild_id);
-    }
-    println!("\nConnection to database took: {:?}", finished_connect);
-    println!("Insert of {} records took: {:?}", res.last_insert_id+1, finished_insert);
-    println!("Read of {} records took: {:?}", res.last_insert_id+1, finished_read);
-    */
 
 // Creates n dummy guilds to insert for benchmarking purposes
 async fn _test_entries(n: u64) -> Result<Vec<guild::ActiveModel>, DbErr> {
