@@ -1,7 +1,11 @@
 [package]
 name = "chains_bot"
 version = "0.1.0"
-edition = "2021"    
+edition = "2021"
+
+[lib]
+name="chains_bot"
+path="src/main.rs"
 
 [dependencies]
 tracing = "0.1.23"
