@@ -10,7 +10,7 @@ use crate::{events::Handler, Connection};
 
 impl Handler{
     pub async fn handle_ready(&self, ctx: Context, _: Ready) {
-
+/*
         let current_user = ctx.cache.current_user().await;
         let data = ctx.data.read().await;
         let con = data.get::<Connection>().unwrap();
@@ -27,7 +27,7 @@ impl Handler{
                 }
             })
         ).exec(con).await.expect("Could not insert into database or no guilds to insert.");
-    
+    */
         println!("
 ┌────────────────────────────────────────────────────────────────────┐
 │ ▄████████    ▄█    █▄       ▄████████  ▄█  ███▄▄▄▄      ▄████████  │

@@ -13,7 +13,7 @@ use std::{sync::Arc, collections::{HashSet, HashMap}};
 use std::time::Duration;
 use db::sea_orm::{ConnectOptions, DbErr, Set, Database, EntityTrait, DbConn};
 use db::*;
-use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*, watch::*, mirror::*};
+use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*, watch::*, mirror_command::mirror};
 
 use serenity::{
     framework::{standard::macros::group, StandardFramework},
@@ -45,6 +45,7 @@ impl TypeMapKey for ShardManagerContainer{
     type Value = Arc<Mutex<ShardManager>>;
 }
 
+use crate::mirror::MIRROR_COMMAND;
 #[group]
 #[commands(ping, snapshot, snapshot_channel, mod_role, disclaimer, watch, mirror)]
 struct General;

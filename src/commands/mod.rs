@@ -8,9 +8,9 @@ use db::sea_orm::sea_query::error::Error;
 use crate::{Connection, EntityTrait};
 
 pub mod disclaimer;
-pub mod mirror;
 pub mod mod_role;
 pub mod ping;
+pub mod mirror_command;
 pub mod snapshot;
 pub mod snapshot_channel;
 pub mod watch;

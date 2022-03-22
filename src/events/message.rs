@@ -6,6 +6,7 @@ use serenity::{
     model::{channel::Message, event::MessageUpdateEvent, id::ChannelId},
     utils::Colour,
 };
+use crate::commands::mirror_command;
 
 impl Handler {
     pub async fn handle_message(&self, ctx: Context, msg: Message) {
@@ -68,70 +69,19 @@ impl Handler {
             }
         }
 
-        if let Some(c_id) = data
-            .get::<MirrorChannelCache>()
-            .expect("No Mirror Channel Cache")
-            .get(&current_channel_id)
-        {
-            let channel_name = &ctx.cache.guild_channel(msg.channel_id).await.unwrap().name;
-            let user_colour = msg
-                .member(&ctx.http)
-                .await
-                .unwrap()
-                .colour(&ctx.cache)
-                .await
-                .unwrap_or(Colour::from(0xFFFFFF as u32));
-            let mut attachments = msg.attachments;
+        mirror_command::events::handle_message(&ctx, &msg).await
 
-            ChannelId(*c_id as u64).send_message(&ctx.http, |m| {
-                m.embed(|e|{
-                    e.colour(user_colour) // nice blue colour
-                        .title(format!("{}#{} (from #{})",msg.author.name, msg.author.discriminator, channel_name))
-                        .thumbnail(
-                            msg.author.avatar_url()
-                                .unwrap_or("http://is5.mzstatic.com/image/thumb/Purple128/v4/bd/f2/33/bdf233b6-9cd2-8329-077e-acc120fce628/source/512x512bb.jpg".to_string())
-                        )
-                        .description(&msg.content)
-                        .footer(|f| {
-                            f.text(format!("by ID: {} in <#{}>. Message ID: {} ", author_id, c_id, msg.id))
-                        })
-                        .timestamp(&msg.timestamp);
-                    if attachments.len() > 0{
-                        e.image(attachments.pop().unwrap().url);
-                    }
-                    e
-                })
-            }).await.unwrap();
-            while let Some(attachment) = attachments.pop() {
-                ChannelId(*c_id as u64)
-                    .send_message(&ctx.http, |m| {
-                        m.embed(|e| {
-                            e.colour(user_colour)
-                                .image(attachment.url)
-                                .footer(|f| {
-                                    f.text(format!(
-                                        "by ID: {} in <#{}>. Message ID: {} ",
-                                        author_id, c_id, msg.id
-                                    ))
-                                })
-                                .timestamp(msg.timestamp)
-                        })
-                    })
-                    .await
-                    .unwrap();
-            }
-        }
     }
     pub async fn handle_message_update(
         &self,
         ctx: Context,
-        _old: Option<Message>,
-        _new: Option<Message>,
+        old: Option<Message>,
+        new: Option<Message>,
         event: MessageUpdateEvent,
     ) {
         let data = ctx.data.read().await;
-        let msg = event;
-        let auth = &msg.author.unwrap();
+        let msg = &event;
+        let auth = msg.author.as_ref().unwrap();
 
         let guild_id = *msg.guild_id.unwrap().as_u64() as i64;
         let author_id = *auth.id.as_u64() as i64;
@@ -147,7 +97,7 @@ impl Handler {
                 .member(&ctx.http, auth)
                 .await
                 .unwrap()
-                .colour(ctx.cache)
+                .colour(&ctx.cache)
                 .await
                 .unwrap_or(Colour::from(0xFFFFFF as u32));
 
@@ -160,7 +110,7 @@ impl Handler {
                         auth.avatar_url()
                         .unwrap_or("http://is5.mzstatic.com/image/thumb/Purple128/v4/bd/f2/33/bdf233b6-9cd2-8329-077e-acc120fce628/source/512x512bb.jpg".to_string())
                     )
-                    .description(format!("Message edited to: {}", msg.content.unwrap()))
+                    .description(format!("Message edited to: {}", msg.content.as_ref().unwrap()))
                     .footer(|f| {
                         f.text(format!("by ID: {} in <#{}>. Message ID: {} ", author_id, t, msg.id))
                     })
@@ -168,5 +118,7 @@ impl Handler {
                 })
             }).await.unwrap();
         }
+
+        mirror_command::events::handle_message_update(&ctx, old, new, &event).await;
     }
 }
