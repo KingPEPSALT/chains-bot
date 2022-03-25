@@ -1,3 +1,5 @@
+# heavily inspired by https://dev.to/rogertorres/first-steps-with-docker-rust-30oi
+
 FROM rust:1.59.0-slim-buster as build
 
 # create a new empty shell project
@@ -12,12 +14,11 @@ COPY ./db/Cargo.toml ./db/Cargo.toml
 COPY ./migration/Cargo.toml ./migration/Cargo.toml
 
 # build fake dependency libs
-RUN touch src/main.rs & mkdir db & mkdir db/src
-RUN touch db/src/lib.rs
-RUN mkdir migration & mkdir migration/src & touch migration/src/lib.rs
+RUN touch src/main.rs && mkdir -p db/src && touch db/src/lib.rs && mkdir -p migration/src && touch migration/src/lib.rs
 
 # this build step will cache your dependencies
-RUN rm src/*.rs & rm migration/src/*.rs & db/src/*.rs & cargo build --release
+#RUN rm src/*.rs & rm migration/src/*.rs & db/src/*.rs & cargo build --release
+RUN cargo build --release
 
 # copy your source tree
 COPY ./src ./src
@@ -25,7 +26,7 @@ COPY ./migration ./migration
 COPY ./db ./db
 
 # build for release
-RUN rm ./target/release/deps/chains_bot*
+RUN rm ./target/release/chains_bot*
 RUN cargo build --release
 
 # our final base
