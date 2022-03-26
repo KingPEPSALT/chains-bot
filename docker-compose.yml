@@ -1,0 +1,7 @@
+services:
+  chains:
+    build: . # the build just says hello world??
+  db:
+    build: ./db/
+    ports:
+     - "5432:5432"
