@@ -1,39 +1,34 @@
-# heavily inspired by https://dev.to/rogertorres/first-steps-with-docker-rust-30oi
+FROM lukemathwalker/cargo-chef:latest-rust-1.59.0 as chef
+WORKDIR /app
+RUN apt update && apt install lld clang -y
 
-FROM rust:1.59.0-slim-buster as build
+FROM chef as planner
+COPY . .
+# Compute a lock-like file for our project
+RUN cargo chef prepare  --recipe-path recipe.json
 
-# create a new empty shell project
-RUN USER=root cargo new --bin chains_bot
-WORKDIR /chains_bot
+FROM chef as builder
+COPY --from=planner /app/recipe.json recipe.json
+# Build our project dependencies, not our application!
+RUN cargo chef cook --release --recipe-path recipe.json
+# Up to this point, if our dependency tree stays the same,
+# all layers should be cached.
+COPY . .
 
-# copy over your manifests
-COPY ./Cargo.lock ./Cargo.lock
-COPY ./Cargo.toml ./Cargo.toml
-COPY ./db/Cargo.lock ./db/Cargo.lock
-COPY ./db/Cargo.toml ./db/Cargo.toml
-COPY ./migration/Cargo.toml ./migration/Cargo.toml
+# Build our project
+RUN cargo build --release --bin chains_bot
+RUN cargo install sea-orm-cli
+RUN sea-orm-cli migrate up
 
-# build fake dependency libs
-RUN touch src/main.rs && mkdir -p db/src && touch db/src/lib.rs && mkdir -p migration/src && touch migration/src/lib.rs
 
-# this build step will cache your dependencies
-#RUN rm src/*.rs & rm migration/src/*.rs & db/src/*.rs & cargo build --release
-RUN cargo build --release
+FROM debian:bullseye-slim AS runtime
+WORKDIR /app
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    # Clean up
+    && apt-get autoremove -y \
+    && apt-get clean -y \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /app/target/release/chains_bot chains_bot
 
-# copy your source tree
-COPY ./src ./src
-COPY ./migration ./migration
-COPY ./db ./db
-
-# build for release
-RUN rm ./target/release/chains_bot*
-RUN cargo build --release
-
-# our final base
-FROM rust:1.59.0-slim-buster
-
-# copy the build artifact from the build stage
-COPY --from=build /chains_bot/target/release/chains_bot .
-
-# startup app
-CMD ["./chains_bot"]
+ENTRYPOINT ["./chains_bot"]
