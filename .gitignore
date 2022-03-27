@@ -1,5 +1,6 @@
 /target
 */target
 .env
+.idea/*
 launch.json
 .vscode

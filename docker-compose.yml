@@ -1,0 +1,27 @@
+services:
+  db:
+    build: ./db/
+    ports:
+      - "5432:5432"
+    environment:
+      - COMPOSE_PROJECT_NAME=db
+    volumes:
+      - .:/code
+    container_name: postgres_db
+  chains:
+    build: .
+    environment:
+      - DATABASE_URL=postgres://postgres:admin@db/postgres
+      - DISCORD_TOKEN=
+      - DISCORD_PREFIX=>
+      - COMPOSE_PROJECT_NAME=chains
+    links:
+      - "db:database"
+    depends_on:
+      - db
+    volumes:
+      - .:/code
+    container_name: chains
+    command: >
+      bash -c "
+        ./wait-for-it/wait-for-it.sh db:5432 -- sea-orm-cli migrate up && ./chains_bot"
