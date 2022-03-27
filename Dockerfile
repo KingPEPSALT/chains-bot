@@ -14,21 +14,24 @@ RUN cargo chef cook --release --recipe-path recipe.json
 # Up to this point, if our dependency tree stays the same,
 # all layers should be cached.
 COPY . .
-
 # Build our project
-RUN cargo build --release --bin chains_bot
 RUN cargo install sea-orm-cli
-RUN sea-orm-cli migrate up
+RUN cargo build --release --bin chains_bot
+#RUN sea-orm-cli migrate up
+RUN git clone https://github.com/vishnubob/wait-for-it.git
+EXPOSE 8080
 
 
-FROM debian:bullseye-slim AS runtime
-WORKDIR /app
-RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends openssl ca-certificates \
-    # Clean up
-    && apt-get autoremove -y \
-    && apt-get clean -y \
-    && rm -rf /var/lib/apt/lists/*
-COPY --from=builder /app/target/release/chains_bot chains_bot
+# turtle: we can't use a fresh runtime just for the executable because we need to run migrations with the project tree
+#FROM debian:bullseye-slim AS runtime
+#WORKDIR /app
+#RUN apt-get update -y \
+#    && apt-get install -y --no-install-recommends openssl ca-certificates \
+#    # Clean up
+#    && apt-get autoremove -y \
+#    && apt-get clean -y \
+#    && rm -rf /var/lib/apt/lists/*
+RUN cp /app/target/release/chains_bot chains_bot
 
-ENTRYPOINT ["./chains_bot"]
+#ENTRYPOINT ["tail", "-f", "/dev/null"]
+CMD ["./chains_bot"]
