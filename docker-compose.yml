@@ -15,7 +15,7 @@ services:
       - DISCORD_TOKEN=${DISCORD_TOKEN}
       - DISCORD_PREFIX=>
       - COMPOSE_PROJECT_NAME=chains
-      - RUST_BACKTRACE=1
+      - RUST_BACKTRACE=${RUST_BACKTRACE}
     links:
       - "db:database"
     depends_on:
