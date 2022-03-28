@@ -13,6 +13,8 @@ use std::{sync::Arc, collections::{HashSet, HashMap}};
 use std::time::Duration;
 use db::sea_orm::{ConnectOptions, DbErr, Set, Database, EntityTrait, DbConn};
 use db::*;
+use migration::{Migrator,MigratorTrait};
+
 use commands::{ping::*, snapshot::*, snapshot_channel::*, mod_role::*, disclaimer::*, watch::*, mirror_command::mirror};
 
 use serenity::{
@@ -76,6 +78,10 @@ async fn main() -> Result<(), DbErr> {
         .max_lifetime(Duration::from_secs(8))
         .sqlx_logging(true);
     let con =  Database::connect(opt).await?;
+
+        
+    /// Apply all pending migrations
+    Migrator::up(&con, None).await?;
 
     let framework = StandardFramework::new()
             .configure(|c| c.owners(owners).prefix(dotenv::var("DISCORD_PREFIX").unwrap()))
