@@ -25,4 +25,4 @@ services:
     container_name: chains
     command: >
       bash -c "
-        ./wait-for-it/wait-for-it.sh db:5432 -- sea-orm-cli migrate up && ./chains_bot"
+        ./wait-for-it/wait-for-it.sh db:5432 && ./chains_bot"
