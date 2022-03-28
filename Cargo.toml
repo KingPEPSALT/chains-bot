@@ -23,3 +23,6 @@ version = "0.10.10"
 
 [dependencies.db]
 path = './db'
+
+[dependencies.migration]
+path = './migration'
