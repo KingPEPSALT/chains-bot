@@ -11,10 +11,11 @@ services:
   chains:
     build: .
     environment:
-      - DATABASE_URL=postgres://postgres:admin@db/postgres
-      - DISCORD_TOKEN=
+      - DATABASE_URL=${DATABASE_URL}
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
       - DISCORD_PREFIX=>
       - COMPOSE_PROJECT_NAME=chains
+      - RUST_BACKTRACE=1
     links:
       - "db:database"
     depends_on:
